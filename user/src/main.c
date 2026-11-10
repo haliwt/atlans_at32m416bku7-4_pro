@@ -24,7 +24,7 @@
 
 /* private includes ----------------------------------------------------------*/
 /* add user code begin private includes */
-
+#include "tx_api.h"
 /* add user code end private includes */
 
 /* private typedef -----------------------------------------------------------*/
