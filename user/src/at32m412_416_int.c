@@ -51,7 +51,9 @@
 
 /* external variables ---------------------------------------------------------*/
 /* add user code begin external variables */
-
+/* 1. ?? ThreadX ????????????? */
+extern void __tx_PendSVHandler(void);
+extern void __tx_SysTickHandler(void);
 /* add user code end external variables */
 
 /**
@@ -203,7 +205,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* add user code begin SysTick_IRQ 0 */
-
+    __tx_SysTickHandler(); /* ?? ThreadX ?????? */
   /* add user code end SysTick_IRQ 0 */
 
   /* add user code begin SysTick_IRQ 1 */
