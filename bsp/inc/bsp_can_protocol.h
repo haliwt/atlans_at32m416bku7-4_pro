@@ -33,7 +33,7 @@ typedef struct {
     uint8_t  power_status;      // 0: 关机/待机, 1: 开机/就绪
     uint8_t  process_func;      // 过程型功能 (0:关, 1:除异味, 2:除螨, 3:消毒)
     bool     dry_func_en;       // 干燥功能开关 (false:关, true:开)
-    uint8_t  process_gear;      // 过程型功能挡位 (0~3)
+    uint8_t  process_gear;      // 过程型功能挡位 (0:关,0x01-gear ,0x02-gear,0x03-gear)
     uint8_t  dry_gear;          // 干燥功能挡位 (0~3)
     uint16_t remain_seconds;    // 剩余运行时间 (单位: 秒)
     uint8_t  temperature;       // 实时温度 (℃)
@@ -52,6 +52,10 @@ extern can_rxbuf_type g_can_rx_buffer;
 void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len);
 void can_parse_thread_entry(ULONG thread_input); // 新增解析线程
 void broadcast_thread_entry(ULONG thread_input);
+
+/* 硬件底层 CAN FD 发送接口伪代码，对接 AT32 硬件时需根据标准库实现 */
+error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len);
+
 
 #endif /* __BSP_CAN_PROTOCOL_H */
 

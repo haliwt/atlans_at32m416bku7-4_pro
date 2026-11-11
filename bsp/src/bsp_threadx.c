@@ -4,7 +4,14 @@
 #define DEMO_QUEUE_SIZE         10
 #define PARSE_STACK_SIZE        2048
 
+/* --- 1. 外部变量或宏定义（根据你实际的工程修改） --- */
+#define BROADCAST_STACK_SIZE    1024        // 广播线程栈大小：1024 字节
+#define BROADCAST_PRIORITY      15          // 线程优先级（根据系统架构自行调整）
 
+
+/* --- 2. 定义 ThreadX 线程组件（全局静态分配） --- */
+static TX_THREAD broadcast_thread;
+static uint8_t   broadcast_stack[BROADCAST_STACK_SIZE]; 
 
 /* Define the ThreadX object control blocks...  */
 
@@ -60,7 +67,7 @@ void    thread_1_entry(ULONG thread_input);
 void    thread_2_entry(ULONG thread_input);
 void    thread_3_and_4_entry(ULONG thread_input);
 void    thread_5_entry(ULONG thread_input);
-void    can_parse_thread_entry(ULONG thread_input);
+//void    can_parse_thread_entry(ULONG thread_input);
 
 /*
 *********************************************************************************************************
@@ -124,6 +131,18 @@ void tx_application_define(void *first_unused_memory)
                      TX_NO_TIME_SLICE,              /* 不开启时间片 */
                      TX_AUTO_START);                /* 创建后立即启动 */
 
+	 /* 创建状态广播发送线程 */
+    tx_thread_create(&broadcast_thread,             // 线程控制块指针
+                     "Status Broadcast Thread",     // 线程名称（Debug调试用）
+                     broadcast_thread_entry,        // 线程入口函数地址
+                     0,                             // 传递给入口函数的参数(thread_input)
+                     broadcast_stack,               // 线程栈起始地址
+                     BROADCAST_STACK_SIZE,          // 线程栈大小（字节）
+                     2,            // 线程优先级
+                     2,            // 禁用抢占阈值（与优先级一致表示允许抢占）
+                     TX_NO_TIME_SLICE,              // 时间片（此处用不到，填无）
+                     TX_AUTO_START);                // 创建后自动启动运行
+
     /* Create threads 3 and 4.  These threads compete for a ThreadX counting semaphore.
        An interesting thing here is that both threads share the same instruction area.  */
     tx_thread_create(&thread_3,              /* 任务控制块地址 */ 
@@ -175,56 +194,44 @@ void tx_application_define(void *first_unused_memory)
  * @param   None
  * @retval  None
  */
-
-
-/**
-  * @brief  ThreadX 独立的 CAN FD 协议接收与业务解析任务 (线程)
-  * @note   无数据时休眠，有数据时被激活，保证极致的实时响应与低功耗
-  */
-void can_parse_thread_entry(ULONG thread_input)
-{
-    while (1)
-    {
-        /* 1. 永久等待信号量（TX_WAIT_FOREVER），无报文时线程处于挂起状态，不占用 CPU */
-        if (tx_semaphore_get(&can_rx_semaphore, TX_WAIT_FOREVER) == TX_SUCCESS)
-        {
-            /* 2. 成功被中断唤醒，提取全局缓冲区 g_can_rx_buffer 中的硬件数据进行解析 */
-            /* 转换枚举类型为具体的字节长度 */
-            uint8_t frame_len = (uint8_t)g_can_rx_buffer.data_length; 
-            
-            /* 调用业务层协议解析函数 */
-            protocol_parse_ctrl_frame(g_can_rx_buffer.data, frame_len);
-        }
-    }
-}
-
-
 void thread_0_entry(ULONG thread_input)
 {
+     /* ARMCC V5 铁律：局部变量必须在最顶部 */
+    (void)thread_input; // 消除未引用警告
 
-UINT    status;
 
     /* This thread simply sits in while-forever-sleep loop.  */
     while(1)
     {
         wdt_counter_reload();
-        /* Increment the thread counter.  */
-        thread_0_counter++;
+       
+        /* 维持 1 秒（1000ms）执行周期，假设 1 Tick = 1ms */
+        /* 只有在开机状态、且有功能正在运行，并且倒计时大于 0 时才处理 */
+        if (g_care_status.remain_seconds > 0)
+        {
+            g_care_status.remain_seconds--;
 
-        /* Sleep for 10 ticks.  */
-        tx_thread_sleep(10);
+            /* 核心逻辑：当时间递减到 0 时，自动关闭业务功能 */
+            if (g_care_status.remain_seconds == 0)
+            {
+                /* 1. 关闭正在运行的过程型功能（消毒/除异味/除螨） */
+                g_care_status.process_func = 0;
+                g_care_status.process_gear = 0;
 
-        /* Set event flag 0 to wakeup thread 5.  */
-        status =  tx_event_flags_set(&event_flags_0, 0x1, TX_OR);
+                /* 2. 联动关闭干燥功能（根据你的业务需求选择是否联动） */
+                g_care_status.dry_func_en = false;
+                g_care_status.dry_gear = 0;
 
-        /* Check status.  */
-        if (status != TX_SUCCESS)
-            break;
+                /* 3. 在此处可直接调用你的底层硬件驱动，关闭相应的继电器或 PWM */
+                // bsp_hardware_stop_all_output(); 
+            }
+        }
+		tx_thread_sleep(50);//10ms * 50 = 500ms .
     }
 }
 
 
-void    thread_1_entry(ULONG thread_input)
+void thread_1_entry(ULONG thread_input)
 {
 
 UINT    status;
