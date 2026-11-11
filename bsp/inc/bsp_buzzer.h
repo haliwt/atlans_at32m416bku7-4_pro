@@ -5,6 +5,11 @@
 
 
 
+void buzzer_sound_on(void);
+
+void buzzer_sound_off(void);
+
+
 
 #endif 
 

@@ -26,6 +26,7 @@
 #include "bsp_buzzer.h"
 #include "bsp_key.h"
 #include "bsp_tim.h"
+#include "bsp_uvc.h"
 #include "bsp_can_protocol.h"
 
 

@@ -21,7 +21,7 @@
 
 /**
   * @brief  init tmr3 function.
-  * @param  none
+  * @param  fan pwm is 25KHZ
   * @retval none
   */
 void wk_tmr3_init(void)
@@ -79,7 +79,7 @@ void wk_tmr3_init(void)
 
 /**
   * @brief  init tmr4 function.
-  * @param  none
+  * @param  UVC LED PWM IS 1KHZ
   * @retval none
   */
 void wk_tmr4_init(void)
@@ -136,7 +136,7 @@ void wk_tmr4_init(void)
 }
 
 /**
-  * @brief  init tmr10 function.
+  * @brief  init tmr10 function-buzzer is frequency 4KHZ .
   * @param  none
   * @retval none
   */

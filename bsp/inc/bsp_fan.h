@@ -6,6 +6,10 @@
 
 
 
+void fan_set_gear(uint8_t fan_speed);
+
+
+
 #endif 
 
 

@@ -31,6 +31,24 @@ extern "C" {
 /* exported types -------------------------------------------------------------*/
 /* add user code begin exported types */
 
+#define PLASMA_GPIO_PORT    GPIOA
+#define PLASMA_GPIO_PIN     GPIO_PINS_15     
+        
+#define NEGATIVE_GPIO_PORT    GPIOB
+#define NEGATIVE_GPIO_PIN     GPIO_PINS_3 
+
+#define I2C_T40_SDA_PORT    GPIOB
+#define I2C_T40_SDA_PIN     GPIO_PINS_6
+
+#define I2C_T40_SCL_PORT    GPIOB
+#define I2C_T40_SCL_PIN     GPIO_PINS_5
+
+
+#define PTC_GPIO_PORT    GPIOB
+#define PTC_GPIO_PIN     GPIO_PINS_5 
+
+
+
 /* add user code end exported types */
 
 /* exported constants --------------------------------------------------------*/

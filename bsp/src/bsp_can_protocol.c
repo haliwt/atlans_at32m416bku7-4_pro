@@ -1,8 +1,10 @@
 #include "bsp.h"
 
-care_machine_status_t g_care_status;
+//care_machine_status_t g_care_status;
+
 
 /* 初始化全局状态变量 (默认为开机就绪状态) */
+#if 0
 care_machine_status_t g_care_status = {
     .power_status = 1,
     .process_func = 0,
@@ -14,7 +16,22 @@ care_machine_status_t g_care_status = {
     .humidity = 30,             // 默认示例湿度
     .fault_code = FAULT_NONE
 };
+#else 
+/* 2. 严格按照结构体成员顺序依次赋值（传统 C89 语法） */
+care_machine_status_t g_care_status = {
+    1,          // power_status
+    0,          // process_func
+    false,      // dry_func_en
+    0,          // process_gear
+    0,          // dry_gear
+    0,          // remain_seconds
+    40,         // temperature
+    30,         // humidity
+    FAULT_NONE  // fault_code
+};
 
+
+#endif 
 
 
 /**
@@ -26,7 +43,8 @@ care_machine_status_t g_care_status = {
 static uint8_t calculate_checksum(uint8_t *p_buf, uint8_t len)
 {
     uint32_t sum = 0;
-    for (uint8_t i = 0; i < len; i++)
+	uint8_t i;
+    for (i = 0; i < len; i++)
     {
         sum += p_buf[i];
     }
@@ -41,14 +59,17 @@ static uint8_t calculate_checksum(uint8_t *p_buf, uint8_t len)
   */
 void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 {
-    /* 1. 基础长度与帧头帧尾校验 */
+     uint16_t rx_addr;
+	uint8_t cal_cs,func_code ,gear_param;
+	
+	/* 1. 基础长度与帧头帧尾校验 */
     if (len < 8 || p_data[0] != FRAME_HEADER || p_data[7] != FRAME_TAIL)
     {
         return; 
     }
 
     /* 2. 接收地址校验 (本设备目标地址固定为 0x80) */
-    uint16_t rx_addr = (p_data[1] << 8) | p_data[2];
+    rx_addr = (p_data[1] << 8) | p_data[2];
     if (rx_addr != 0x0080)
     {
         return; 
@@ -61,15 +82,15 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
     }
 
     /* 4. 和校验验证 (计算 Byte 0 到 Byte 5 的和) */
-    uint8_t cal_cs = calculate_checksum(p_data, 6);
+    cal_cs = calculate_checksum(p_data, 6);
     if (cal_cs != p_data[6])
     {
         return; // 校验错误，丢弃
     }
 
     /* 5. 协议指令业务逻辑解析 */
-    uint8_t func_code = p_data[4];
-    uint8_t gear_param = p_data[5];
+     func_code = p_data[4];
+    gear_param = p_data[5];
 
     switch (func_code)
     {
@@ -425,6 +446,7 @@ error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len)
  * @param  len:      发送数据字节长度 (数据流长度，如广播包传 13)
  * @retval error_status: 返回 SUCCESS (0) 发送成功, 或 ERROR (1) 发送失败/总线忙
  */
+ #if 0
 error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len)
 {
     /* --- ARMCC V5 铁律：所有局部变量必须定义在函数体最顶部 --- */
@@ -505,5 +527,97 @@ error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len)
 
     return SUCCESS; 
 }
+#else 
+error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len)
+{
+    /* --- ARMCC V5 铁律：所有局部变量必须定义在函数体最顶部 --- */
+    can_txbuf_type tx_struct;
+    error_status status;
+    uint32_t timeout_counter;
+    uint8_t i; // 新增：用于数据拷贝的循环变量
 
+    /* 1. 基础指针非空及长度合法性校验 */
+    if ((p_data == NULL) || (len == 0))
+    {
+        return ERROR;
+    }
+
+    /* 2. 结构体初始化，清除栈内存随机值 */
+    tx_struct.id = id;
+    tx_struct.tx_timestamp = 0;
+    tx_struct.handle = 0;
+
+    /* 💡 修复 #137 报错：不能直接对数组名赋值，必须逐字节拷贝数据 💡 */
+    for (i = 0; i < len; i++)
+    {
+        tx_struct.data[i] = p_data[i];
+    }
+
+    /* 3. 自动根据 ID 大小选择帧格式 */
+    if (id > 0x7FF)
+    {
+        tx_struct.id_type = CAN_ID_EXTENDED;  // 29位扩展帧
+    }
+    else
+    {
+        tx_struct.id_type = CAN_ID_STANDARD;  // 11位标准帧
+    }
+
+    /* 4. 配置为标准数据帧 */
+    tx_struct.frame_type = CAN_FRAME_DATA;   // 数据帧
+
+    /* 5. 处理数据长度 (完美匹配官方库规范) */
+#ifdef SUPPORT_CAN_FD
+    /* 采用官方标准 DLC 长度赋值 */
+    if (len <= 8)         tx_struct.data_length = len;
+    else if (len <= 12)   tx_struct.data_length = 9;   // 12 字节
+    else if (len <= 16)   tx_struct.data_length = 10;  // 16 字节 (13字节广播包会自动落入此区间)
+    else if (len <= 20)   tx_struct.data_length = 11;  // 20 字节
+    else if (len <= 24)   tx_struct.data_length = 12;  // 24 字节
+    else if (len <= 32)   tx_struct.data_length = 13;  // 32 字节
+    else if (len <= 48)   tx_struct.data_length = 14;  // 48 字节
+    else                  tx_struct.data_length = 15;  // 64 字节
+
+    tx_struct.fd_format = CAN_FORMAT_FD;         // 开启 CAN FD 格式
+    tx_struct.fd_rate_switch = CAN_BRS_ON;       // 开启 BRS 速率切换
+#else
+    tx_struct.data_length = (len > 8) ? 8 : len;
+#endif
+
+    /* 6. 第一步：调用官方底层将数据装填进最高优先级硬件缓冲区 (PTB) */
+    status = can_txbuf_write(CAN1, CAN_TXBUF_PTB, &tx_struct);
+    if (status == ERROR)
+    {
+        return ERROR; 
+    }
+
+    /* 7. 第二步：调用官方底层触发发送指令 */
+    status = can_txbuf_transmit(CAN1, CAN_TRANSMIT_PTB);
+    if (status == ERROR)
+    {
+        return ERROR;
+    }
+
+    /* 8. 闭环防爆舱设计：使用官方标准 API 等待发送结束标志 (TPIF) */
+    timeout_counter = 0;
+    while (can_flag_get(CAN1, CAN_TPIF_FLAG) != SET)
+    {
+        timeout_counter++;
+        if (timeout_counter > 60000)  
+        {
+            return ERROR; // 发送超时，可能总线断开或无响应
+        }
+    }
+    
+    /* 清除发送完成标志，为下一次发送做准备 */
+    can_flag_clear(CAN1, CAN_TPIF_FLAG);
+
+    return SUCCESS; 
+}
+
+
+
+
+
+#endif 
 

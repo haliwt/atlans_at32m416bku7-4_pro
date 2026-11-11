@@ -111,4 +111,3 @@ void wk_dma_channel_config(dma_channel_type* dmax_channely, uint32_t peripheral_
 /* add user code begin 1 */
 
 /* add user code end 1 */
-
