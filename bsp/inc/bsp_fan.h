@@ -8,6 +8,8 @@
 
 void fan_set_gear(uint8_t fan_speed);
 
+void fan_stop(void);
+
 
 
 #endif 

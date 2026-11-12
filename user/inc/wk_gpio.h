@@ -47,6 +47,8 @@ extern "C" {
 #define PTC_GPIO_PORT    GPIOB
 #define PTC_GPIO_PIN     GPIO_PINS_5 
 
+#define 
+
 
 
 /* add user code end exported types */

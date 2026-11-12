@@ -1,7 +1,8 @@
 #include "bsp.h"
 
-//care_machine_status_t g_care_status;
+care_machine_status_t g_care_status;
 
+can_rxbuf_type g_can_rx_buffer;
 
 /* 初始化全局状态变量 (默认为开机就绪状态) */
 #if 0
@@ -18,17 +19,6 @@ care_machine_status_t g_care_status = {
 };
 #else 
 /* 2. 严格按照结构体成员顺序依次赋值（传统 C89 语法） */
-care_machine_status_t g_care_status = {
-    1,          // power_status
-    0,          // process_func
-    false,      // dry_func_en
-    0,          // process_gear
-    0,          // dry_gear
-    0,          // remain_seconds
-    40,         // temperature
-    30,         // humidity
-    FAULT_NONE  // fault_code
-};
 
 
 #endif 
@@ -89,8 +79,8 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
     }
 
     /* 5. 协议指令业务逻辑解析 */
-     func_code = p_data[4];
-    gear_param = p_data[5];
+    func_code = p_data[4]; //0x01:FUNC_DEODORIZE:除异味,0x02:FUNC_MITES:除螨,0x03:FUNC_DISINFECT:消毒 0x04:dry
+    gear_param = p_data[5]; //0x0,0x01,0x02,0x03
 
     switch (func_code)
     {
@@ -100,7 +90,10 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
                 g_care_status.power_status = 0;
                 g_care_status.process_func = 0;
                 g_care_status.dry_func_en = false;
-                g_care_status.remain_seconds = 0;
+                g_care_status.remain_deodorize_seconds = 0;
+				g_care_status.remain_mites_seconds = 0;
+				g_care_status.remain_disingfect_seconds = 0;
+				g_care_status.remain_dry_seconds = 0;
             }
             else if (gear_param == 0x04) // 开机
             {
@@ -108,69 +101,136 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
             }
             break;
 
-        case FUNC_DRY: // 干燥控制 (可与过程型并行)
-            if (g_care_status.power_status == 1)
-            {
-                if (gear_param == 0x00)
-                {
-                    g_care_status.dry_func_en = false;
-                    g_care_status.dry_gear = 0;
-                }
-                else if (gear_param >= 0x01 && gear_param <= 0x03)
-                {
-                    g_care_status.dry_func_en = true;
-                    g_care_status.dry_gear = gear_param;
-                }
-            }
-            break;
-
+       
         case FUNC_DEODORIZE: // 除异味
+
+		   if (gear_param == 0x00) // 关闭当前过程型功能
+              {
+	                g_care_status.power_deodorize_status = false;
+	                g_care_status.process_func = 0;
+	                g_care_status.dry_func_en = false;
+					g_care_status.process_deodorize_fan_speed =0;
+	                g_care_status.remain_deodorize_seconds = 0;
+			
+
+					return ;
+               }
+
+
+				if (gear_param >= 0x01 && gear_param <= 0x03)
+				{
+                    g_care_status.power_deodorize_status = true;
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.process_gear = gear_param;
+					g_care_status.process_deodorize_fan_speed  = func_code;
+					
+				}   
+
+				if (func_code == FUNC_DEODORIZE) //除异味
+				{
+					if (gear_param == 1) g_care_status.remain_deodorize_seconds= 30 * 60;
+					else if (gear_param == 2) g_care_status.remain_deodorize_seconds = 45 * 60;
+					else if (gear_param == 3) g_care_status.remain_deodorize_seconds = 60 * 60;
+				}
+
+
+		break;
+
         case FUNC_MITES:     // 除螨
+
+		     if (gear_param == 0x00) // 关闭当前过程型功能
+                {
+	                g_care_status.power_mites_status = false;
+	                g_care_status.process_func = 0;
+	                g_care_status.dry_func_en = false;
+	                g_care_status.process_mites_fan_speed =0;
+					g_care_status.remain_mites_seconds = 0;
+					
+			        return ;
+                }
+
+			 if (gear_param >= 0x01 && gear_param <= 0x03)
+				{
+                    g_care_status.power_mites_status = true;
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.process_gear = gear_param;
+					g_care_status.process_mites_fan_speed  = func_code;
+					
+				}  
+
+			 	if (func_code == FUNC_MITES) //除螨虫
+                    {
+                        if (gear_param == 1) g_care_status.remain_mites_seconds = 30 * 60;
+                        else if (gear_param == 2) g_care_status.remain_mites_seconds= 45 * 60;
+                        else if (gear_param == 3) g_care_status.remain_mites_seconds = 60 * 60;
+                    }
+
+		break;
         case FUNC_DISINFECT: // 消毒
-            //if (g_care_status.power_status == 1)
-            //{
+
+		if (gear_param == 0x00) // 关闭当前过程型功能
+                {
+	                g_care_status.power_disingfect_status = false;
+	                g_care_status.disingfect_gear = 0;
+	                g_care_status.dry_func_en = false;
+	                g_care_status.remain_disingfect_seconds = 0;
+					g_care_status.process_disingfect_fan_speed =0;
+
+					return ;
+                }
+
+		       if (gear_param >= 0x01 && gear_param <= 0x03)
+				{
+                   // g_care_status.power_status = 1;
+                    g_care_status.power_disingfect_status = true;
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.process_gear = gear_param;
+					g_care_status.process_disingfect_fan_speed  = func_code;
+					
+				} 
+
+			    // 根据协议设定动态初始化剩余时间 (以消毒为例)
+                 if (func_code == FUNC_DISINFECT)
+                  {
+                        if (gear_param == 1)g_care_status.remain_disingfect_seconds  = 30 * 60;
+                        else if (gear_param == 2) g_care_status.remain_disingfect_seconds  = 45 * 60;
+                        else if (gear_param == 3) g_care_status.remain_disingfect_seconds = 60 * 60;
+                  }
+					
+
+
+
+		break;
+				 
+        case FUNC_DRY: // 干燥控制 (可与过程型并行)
+
                 if (gear_param == 0x00) // 关闭当前过程型功能
                 {
-                    g_care_status.process_func = 0;
-                    g_care_status.process_gear = 0;
-                    g_care_status.remain_seconds = 0;
+	                g_care_status.power_dry_status = false;
+	                g_care_status.remain_dry_seconds = 0;
+				    g_care_status.process_dry_fan_speed =0;
+
+					return ;
                 }
-                else if (gear_param >= 0x01 && gear_param <= 0x03)
-                {
-                    g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
-                    g_care_status.process_gear = gear_param;
-                    
-                    // 根据协议设定动态初始化剩余时间 (以消毒为例)
-                    if (func_code == FUNC_DISINFECT)
+
+				if (gear_param >= 0x01 && gear_param <= 0x03)
+				{
+                   // g_care_status.power_status = 1;
+                    g_care_status.power_dry_status = true;
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.dry_gear = gear_param;
+					g_care_status.process_dry_fan_speed  = func_code;
+					
+				} 
+                if (func_code == FUNC_DRY) //烘干
                     {
-                        if (gear_param == 1) g_care_status.remain_seconds = 30 * 60;
-                        else if (gear_param == 2) g_care_status.remain_seconds = 45 * 60;
-                        else if (gear_param == 3) g_care_status.remain_seconds = 60 * 60;
+                        if (gear_param == 1) g_care_status.remain_dry_seconds = 30 * 60;
+                        else if (gear_param == 2) g_care_status.remain_dry_seconds = 45 * 60;
+                        else if (gear_param == 3) g_care_status.remain_dry_seconds = 60 * 60;
                     }
-					else if (func_code == FUNC_DEODORIZE) //除异味
-                    {
-                        if (gear_param == 1) g_care_status.remain_seconds = 30 * 60;
-                        else if (gear_param == 2) g_care_status.remain_seconds = 45 * 60;
-                        else if (gear_param == 3) g_care_status.remain_seconds = 60 * 60;
-                    }
-					else if (func_code == FUNC_MITES) //除螨虫
-                    {
-                        if (gear_param == 1) g_care_status.remain_seconds = 30 * 60;
-                        else if (gear_param == 2) g_care_status.remain_seconds = 45 * 60;
-                        else if (gear_param == 3) g_care_status.remain_seconds = 60 * 60;
-                    }
-					else if (func_code == FUNC_DRY) //除异味
-                    {
-                        if (gear_param == 1) g_care_status.remain_seconds = 30 * 60;
-                        else if (gear_param == 2) g_care_status.remain_seconds = 45 * 60;
-                        else if (gear_param == 3) g_care_status.remain_seconds = 60 * 60;
-                    }
-                    else
-                    {
-                        g_care_status.remain_seconds = 0; // 默认 0
-                    }
+                   
                 }
-           // }
+   
             break;
 
         default:

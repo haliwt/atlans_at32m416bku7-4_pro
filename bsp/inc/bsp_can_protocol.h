@@ -31,14 +31,36 @@
 /* 护理机内部运行状态结构体 */
 typedef struct {
     uint8_t  power_status;      // 0: 关机/待机, 1: 开机/就绪
+    bool  power_disingfect_status ;
+	bool  power_deodorize_status ;
+	bool  power_mites_status ;
+	bool  power_dry_status;
+	
     uint8_t  process_func;      // 过程型功能 (0:关, 1:除异味, 2:除螨, 3:消毒)
     bool     dry_func_en;       // 干燥功能开关 (false:关, true:开)
     uint8_t  process_gear;      // 过程型功能挡位 (0:关,0x01-gear ,0x02-gear,0x03-gear)
     uint8_t  dry_gear;          // 干燥功能挡位 (0~3)
-    uint16_t remain_seconds;    // 剩余运行时间 (单位: 秒)
+    uint8_t  deodorize_gear;
+	uint8_t  mites_gear;
+	uint8_t  disingfect_gear;
+    
+    uint8_t   process_deodorize_fan_speed ;
+	uint8_t   process_mites_fan_speed ;
+	uint8_t   process_disingfect_fan_speed ;
+	uint8_t   process_dry_fan_speed ;
+
+	
+    uint16_t remain_deodorize_seconds;    // 剩余运行时间 (单位: 秒)
+    uint16_t remain_mites_seconds;    // 剩余运行时间 (单位: 秒)
+    uint16_t remain_disingfect_seconds;    // 剩余运行时间 (单位: 秒)
+    uint16_t remain_dry_seconds;    // 剩余运行时间 (单位: 秒)
     uint8_t  temperature;       // 实时温度 (℃)
     uint8_t  humidity;          // 实时湿度 (%RH)
     uint8_t  fault_code;        // 当前故障码
+    bool  done_task_deodorize_flag;
+	bool  done_task_mites_flag;
+	bool  done_task_disinfect_flag;
+	 bool  done_task_dry_flag;
 } care_machine_status_t;
 
 /* 全局全局状态变量声明 */

@@ -207,25 +207,8 @@ void thread_0_entry(ULONG thread_input)
        
         /* 维持 1 秒（1000ms）执行周期，假设 1 Tick = 1ms */
         /* 只有在开机状态、且有功能正在运行，并且倒计时大于 0 时才处理 */
-        if (g_care_status.remain_seconds > 0)
-        {
-            g_care_status.remain_seconds--;
-
-            /* 核心逻辑：当时间递减到 0 时，自动关闭业务功能 */
-            if (g_care_status.remain_seconds == 0)
-            {
-                /* 1. 关闭正在运行的过程型功能（消毒/除异味/除螨） */
-                g_care_status.process_func = 0;
-                g_care_status.process_gear = 0;
-
-                /* 2. 联动关闭干燥功能（根据你的业务需求选择是否联动） */
-                g_care_status.dry_func_en = false;
-                g_care_status.dry_gear = 0;
-
-                /* 3. 在此处可直接调用你的底层硬件驱动，关闭相应的继电器或 PWM */
-                // bsp_hardware_stop_all_output(); 
-            }
-        }
+        power_on_off_handler();
+	
 		tx_thread_sleep(50);//10ms * 50 = 500ms .
     }
 }

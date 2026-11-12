@@ -26,8 +26,12 @@
 #include "bsp_buzzer.h"
 #include "bsp_key.h"
 #include "bsp_tim.h"
+#include "bsp_disingfect.h"
 #include "bsp_uvc.h"
+#include "bsp_deodorize.h"
+#include "bsp_mites.h"
 #include "bsp_can_protocol.h"
+#include "bsp_power.h"
 
 
 #include "bsp_threadx.h"

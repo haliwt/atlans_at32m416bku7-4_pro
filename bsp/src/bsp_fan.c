@@ -21,18 +21,25 @@ void fan_set_gear(uint8_t fan_speed)
     switch (fan_speed) {
         case FAN_GEAR_OFF:
             compare_value = 0;          // 0% 占空比
+            tmr_counter_enable(TMR3, FALSE);
             break;
         case FAN_GEAR_LOW:
+			
             compare_value = 4100;       // 50% 占空比 (7200 * 0.5)
+            tmr_counter_enable(TMR3, TRUE);
             break;
         case FAN_GEAR_MID:
+			
             compare_value = 4320;       // 60% 占空比 (7200 * 0.6)
+            tmr_counter_enable(TMR3, TRUE);
             break;
         case FAN_GEAR_HIGH:
             compare_value = 7199;       // 100% 占空比
+            tmr_counter_enable(TMR3, TRUE);
             break;
         default:
             compare_value = 0;
+			 tmr_counter_enable(TMR3, FALSE);
             break;
     }
 
@@ -41,5 +48,12 @@ void fan_set_gear(uint8_t fan_speed)
 }
 
 
+void fan_stop(void)
+{
+    tmr_counter_enable(TMR3, FALSE);
+	tmr_channel_value_set(TMR3, TMR_SELECT_CHANNEL_2, 0);
+
+
+}
 
 
