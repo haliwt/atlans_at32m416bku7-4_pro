@@ -19,7 +19,7 @@
 #include "bsp_can.h"
 #include "bsp_adc.h"
 #include "bsp_plasma.h"
-#include "bsp_gxtht40.h"
+#include "bsp_aht30.h"
 #include "bsp_fan.h"
 #include "bsp_ptc.h"
 #include "bsp_disp.h"
@@ -32,6 +32,7 @@
 #include "bsp_mites.h"
 #include "bsp_can_protocol.h"
 #include "bsp_power.h"
+#include "bsp_led.h"
 
 
 #include "bsp_threadx.h"

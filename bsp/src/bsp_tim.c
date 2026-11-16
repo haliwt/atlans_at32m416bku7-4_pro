@@ -24,12 +24,12 @@ void tmr11_irq(void)
 			  timer_10ms_cnt = 0; // 1秒时间到，清零计数器
 			  
 			  /* 执行衣物护理机的秒倒计时逻辑 */
-			  if(g_care_status.power_status == 1 && g_care_status.remain_seconds > 0)
+			  if(g_care_status.power_status == 1 && g_care_status.remain_dry_seconds > 0)
 			  {
-				  g_care_status.remain_seconds--;
+				  g_care_status.remain_dry_seconds--;
 				  
 				  /* 倒计时自然结束，按协议更新状态 */
-				  if(g_care_status.remain_seconds == 0)
+				  if(g_care_status.remain_dry_seconds == 0)
 				  {
 					  g_care_status.process_func = 0; // 关闭过程型功能
 					  g_care_status.process_gear = 0; // 挡位变为0挡提示结束

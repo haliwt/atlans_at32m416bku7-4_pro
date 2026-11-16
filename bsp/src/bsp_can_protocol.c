@@ -120,7 +120,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 				if (gear_param >= 0x01 && gear_param <= 0x03)
 				{
                     g_care_status.power_deodorize_status = true;
-					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
 					g_care_status.process_gear = gear_param;
 					g_care_status.process_deodorize_fan_speed  = func_code;
 					
@@ -152,7 +152,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 			 if (gear_param >= 0x01 && gear_param <= 0x03)
 				{
                     g_care_status.power_mites_status = true;
-					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
 					g_care_status.process_gear = gear_param;
 					g_care_status.process_mites_fan_speed  = func_code;
 					
@@ -183,7 +183,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 				{
                    // g_care_status.power_status = 1;
                     g_care_status.power_disingfect_status = true;
-					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
+					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
 					g_care_status.process_gear = gear_param;
 					g_care_status.process_disingfect_fan_speed  = func_code;
 					
@@ -229,7 +229,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
                         else if (gear_param == 3) g_care_status.remain_dry_seconds = 60 * 60;
                     }
                    
-                }
+                
    
             break;
 
@@ -288,8 +288,8 @@ void broadcast_thread_entry(ULONG thread_input)
         tx_buf[5] |= ((g_care_status.dry_gear & 0x03) << 2);
 
         /* 4. 组装 Byte 2~3: 剩余时间 (大端模式) */
-        tx_buf[6] = (uint8_t)((g_care_status.remain_seconds >> 8) & 0xFF);
-        tx_buf[7] = (uint8_t)(g_care_status.remain_seconds & 0xFF);
+        tx_buf[6] = (uint8_t)((g_care_status.remain_dry_seconds >> 8) & 0xFF);
+        tx_buf[7] = (uint8_t)(g_care_status.remain_dry_seconds & 0xFF);
 
         /* 5. 组装 Byte 4 & Byte 5: 温湿度 */
         tx_buf[8] = g_care_status.temperature;

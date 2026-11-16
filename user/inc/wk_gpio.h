@@ -31,6 +31,12 @@ extern "C" {
 /* exported types -------------------------------------------------------------*/
 /* add user code begin exported types */
 
+ 
+/* add user code end exported types */
+
+/* exported constants --------------------------------------------------------*/
+/* add user code begin exported constants */
+
 #define PLASMA_GPIO_PORT    GPIOA
 #define PLASMA_GPIO_PIN     GPIO_PINS_15     
         
@@ -47,14 +53,14 @@ extern "C" {
 #define PTC_GPIO_PORT    GPIOB
 #define PTC_GPIO_PIN     GPIO_PINS_5 
 
-#define 
+
+#define LED_POWER_PORT    GPIOA
+#define LED_POWER_PIN     GPIO_PINS_10
 
 
+#define LED_1_PORT       GPIOA
+#define LED_1_PIN        GPIO_PINS_9
 
-/* add user code end exported types */
-
-/* exported constants --------------------------------------------------------*/
-/* add user code begin exported constants */
 
 /* add user code end exported constants */
 

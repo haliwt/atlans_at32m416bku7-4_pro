@@ -4,8 +4,8 @@
 
 
 
-#define DRY_ON()      if(PTC_GPIO_PORT ->scr = PTC_GPIO_PIN;)while(0)
-#define DRY_OFF()      if(PTC_GPIO_PORT ->clr = PTC_GPIO_PIN;)while(0)
+#define DRY_ON()      do{PTC_GPIO_PORT ->scr = PTC_GPIO_PIN;}while(0)
+#define DRY_OFF()     do{PTC_GPIO_PORT ->clr = PTC_GPIO_PIN;}while(0)
 
 
 
