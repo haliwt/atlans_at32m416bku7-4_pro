@@ -25,6 +25,7 @@
 /* private includes ----------------------------------------------------------*/
 /* add user code begin private includes */
 #include "tx_api.h"
+#include "bsp.h"
 /* add user code end private includes */
 
 /* private typedef -----------------------------------------------------------*/
@@ -58,6 +59,7 @@
  * ??:????????!
  * ThreadX ?????????,???????????
  */
+ #if 0
 void tx_application_define(void *first_unused_memory)
 {
     /* 
@@ -65,6 +67,7 @@ void tx_application_define(void *first_unused_memory)
      * ????????,?????,?????????,?????????
      */
 }
+#endif 
 /* add user code end 0 */
 
 /**
