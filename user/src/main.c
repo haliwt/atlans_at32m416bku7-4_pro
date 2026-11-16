@@ -19,15 +19,12 @@
 #include "wk_tmr.h"
 #include "wk_usart.h"
 #include "wk_wdt.h"
-#include "wk_dma.h"
-
 #include "wk_gpio.h"
 #include "wk_system.h"
 
 /* private includes ----------------------------------------------------------*/
 /* add user code begin private includes */
 #include "tx_api.h"
-#include "bsp.h"
 /* add user code end private includes */
 
 /* private typedef -----------------------------------------------------------*/
@@ -61,7 +58,6 @@
  * ??:????????!
  * ThreadX ?????????,???????????
  */
-#if 0
 void tx_application_define(void *first_unused_memory)
 {
     /* 
@@ -69,7 +65,6 @@ void tx_application_define(void *first_unused_memory)
      * ????????,?????,?????????,?????????
      */
 }
-#endif 
 /* add user code end 0 */
 
 /**
@@ -123,35 +118,9 @@ int main(void)
 
   /* init tmr10 function. */
   wk_tmr10_init();
-  
 
   /* init tmr11 function. */
   wk_tmr11_init();
-
-  
-   /* init dma1 channel1 */
-   wk_dma1_channel1_init();
-
-   /* config dma channel transfer parameter */
-  /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR 
-     and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
-  wk_dma_channel_config(DMA1_CHANNEL1, 
-                        (uint32_t)&ADC2->odt, 
-                        DMA1_CHANNEL1_MEMORY_BASE_ADDR, 
-                        DMA1_CHANNEL1_BUFFER_SIZE);
-  dma_channel_enable(DMA1_CHANNEL1, TRUE);
-
-
-   /* init dma1 channel2 */
-  wk_dma1_channel2_init();
-  /* config dma channel transfer parameter */
-  /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR 
-     and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
-  wk_dma_channel_config(DMA1_CHANNEL2, 
-                        (uint32_t)&USART2->dt, 
-                        DMA1_CHANNEL2_MEMORY_BASE_ADDR, 
-                        DMA1_CHANNEL2_BUFFER_SIZE);
-  dma_channel_enable(DMA1_CHANNEL2, TRUE);
 
   /* add user code begin 2 */
    tx_kernel_enter();

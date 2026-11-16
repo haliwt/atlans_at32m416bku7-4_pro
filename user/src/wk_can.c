@@ -124,4 +124,3 @@ void wk_can1_init(void)
 /* add user code begin 1 */
 
 /* add user code end 1 */
-

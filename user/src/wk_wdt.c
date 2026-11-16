@@ -27,16 +27,16 @@
 void wk_wdt_init(void)
 {
   /* add user code begin wdt_init 0 */
-  // TimeOver = 13s.
+
   /* add user code end wdt_init 0 */
 
   wdt_register_write_enable(TRUE);
-  wdt_divider_set(WDT_CLK_DIV_128);
+  wdt_divider_set(WDT_CLK_DIV_4);
   wdt_reload_value_set(0xFFF);
   wdt_counter_reload();
 
   /* if enabled, please feed the dog through wdt_counter_reload() function */
-  wdt_enable();
+  //wdt_enable();
 
   /* add user code begin wdt_init 1 */
 

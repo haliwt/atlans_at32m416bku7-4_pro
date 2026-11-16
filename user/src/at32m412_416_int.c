@@ -16,7 +16,7 @@
 #include "at32m412_416_int.h"
 /* private includes ----------------------------------------------------------*/
 /* add user code begin private includes */
-#include "bsp.h"
+
 /* add user code end private includes */
 
 /* private typedef -----------------------------------------------------------*/
@@ -52,7 +52,7 @@
 /* external variables ---------------------------------------------------------*/
 /* add user code begin external variables */
 /* 1. ?? ThreadX ????????????? */
-//extern void __tx_PendSVHandler(void);
+extern void __tx_PendSVHandler(void);
 extern void __tx_SysTickHandler(void);
 /* add user code end external variables */
 
@@ -189,7 +189,7 @@ void DebugMon_Handler(void)
 void PendSV_Handler(void)
 {
   /* add user code begin PendSV_IRQ 0 */
-
+  __tx_PendSVHandler(); /* ?? ThreadX ???? */
   /* add user code end PendSV_IRQ 0 */
   /* add user code begin PendSV_IRQ 1 */
 
@@ -205,31 +205,13 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* add user code begin SysTick_IRQ 0 */
-    __tx_SysTickHandler(); /* ?? ThreadX ?????? */
+__tx_SysTickHandler(); /* ?? ThreadX ?????? */
   /* add user code end SysTick_IRQ 0 */
 
   /* add user code begin SysTick_IRQ 1 */
 
   /* add user code end SysTick_IRQ 1 */
 }
-
-/**
-  * @brief  this function handles CAN1 RX handler.
-  * @param  none
-  * @retval none
-  */
-#if 0
-void CAN1_RX_IRQHandler(void)
-{
-  /* add user code begin CAN1_RX_IRQ 0 */
-
-  /* add user code end CAN1_RX_IRQ 0 */
-
-  /* add user code begin CAN1_RX_IRQ 1 */
-
-  /* add user code end CAN1_RX_IRQ 1 */
-}
-#endif 
 
 /**
   * @brief  this function handles TMR1 Trigger and hall and TMR11 handler.
@@ -239,7 +221,7 @@ void CAN1_RX_IRQHandler(void)
 void TMR1_TRG_HALL_TMR11_IRQHandler(void)
 {
   /* add user code begin TMR1_TRG_HALL_TMR11_IRQ 0 */
-    tmr11_irq();
+
   /* add user code end TMR1_TRG_HALL_TMR11_IRQ 0 */
 
   /* add user code begin TMR1_TRG_HALL_TMR11_IRQ 1 */
