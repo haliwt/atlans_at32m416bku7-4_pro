@@ -16,7 +16,7 @@
 #include "at32m412_416_int.h"
 /* private includes ----------------------------------------------------------*/
 /* add user code begin private includes */
-
+#include "bsp.h"
 /* add user code end private includes */
 
 /* private typedef -----------------------------------------------------------*/
@@ -221,7 +221,7 @@ __tx_SysTickHandler(); /* ?? ThreadX ?????? */
 void TMR1_TRG_HALL_TMR11_IRQHandler(void)
 {
   /* add user code begin TMR1_TRG_HALL_TMR11_IRQ 0 */
-
+     tmr11_irq();
   /* add user code end TMR1_TRG_HALL_TMR11_IRQ 0 */
 
   /* add user code begin TMR1_TRG_HALL_TMR11_IRQ 1 */

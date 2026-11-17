@@ -6,6 +6,7 @@ void CAN1_RX_IRQHandler(void)
     //can_rx_message_type rx_message;
    // uint8_t frame_len ;
     can_rxbuf_type rx_message;
+	UINT tx_status;
 
     /* 1. 检查是否是接收中断 */
     if(can_interrupt_flag_get(CAN1, CAN_RIF_FLAG) != RESET) ///*!< receiver interrupt flag */
@@ -14,6 +15,26 @@ void CAN1_RX_IRQHandler(void)
         //can_message_receive(CAN1, CAN_RX_FIFO0, &rx_message);
         //can_message_rx(CAN1, CAN_RX_FIFO0, &rx_message); 
         can_rxbuf_read(CAN1, &rx_message);
+
+		/* 3. 过滤协议条件：必须是扩展帧，且 ID 为协议规定的 0x18000080 */
+        if ((rx_message.id_type == CAN_ID_EXTENDED) && (rx_message.id == CAN_ID_CTRL))
+        {
+            /* 
+             * 4. 关键修改：将整包结构体直接发送到 ThreadX 消息队列中！
+             * 注意：在中断服务函数（ISR）中，绝对不能阻塞等待，因此超时参数必须传 TX_NO_WAIT (0)。
+             */
+            tx_status = tx_queue_send(&can_rx_queue, &rx_message, TX_NO_WAIT);
+            
+            if (tx_status != TX_SUCCESS)
+            {
+                /* 队列满时的错误处理：可以在这里记录丢包计数器 */
+                // g_can_rx_drop_count++;
+            }
+        }
+
+
+
+		#if 0
 
         /* 3. 过滤协议条件：必须是扩展帧，且 ID 为协议规定的 0x18000080 */
         if((rx_message.id_type == CAN_ID_EXTENDED) && (rx_message.id == CAN_ID_CTRL))
@@ -32,6 +53,7 @@ void CAN1_RX_IRQHandler(void)
 
 			#endif 
         }
+		#endif 
 
         /* 5. 关键修正：使用官方正确的 CAN_RIF_FLAG 清除接收中断标志，防止死循环 */
         can_flag_clear(CAN1, CAN_RIF_FLAG); 

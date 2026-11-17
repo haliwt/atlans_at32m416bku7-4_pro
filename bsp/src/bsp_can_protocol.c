@@ -4,6 +4,8 @@ care_machine_status_t g_care_status;
 
 can_rxbuf_type g_can_rx_buffer;
 
+//雅特力 AT32M416 工业级 CAN FD 报文发送函数（高可靠量产版）
+
 /* 初始化全局状态变量 (默认为开机就绪状态) */
 #if 0
 care_machine_status_t g_care_status = {
@@ -244,9 +246,27 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
   */
 void can_parse_thread_entry(ULONG thread_input)
 {
-    while (1)
+
+     /* 声明线程私有的报文接收实体，确保线程安全 */
+    can_rxbuf_type local_rx_packet; 
+	uint8_t frame_len;
+
+	while (1)
     {
-        /* 1. 永久等待信号量（TX_WAIT_FOREVER），无报文时线程处于挂起状态，不占用 CPU */
+
+    #if 1
+         /* 1. 阻塞等待队列中的数据。
+         * 如果队列为空，线程挂起不占 CPU；一旦中断投递了新报文，线程立即被唤醒。
+         */
+         if(tx_queue_receive(&can_rx_queue, &local_rx_packet, TX_WAIT_FOREVER)== TX_SUCCESS){
+
+              /* 2. 从收到的结构体中提取真实的字节长度并解析 */
+               frame_len = (uint8_t)local_rx_packet.data_length; 
+            
+               protocol_parse_ctrl_frame(local_rx_packet.data, frame_len);
+        }
+	   #else 
+	   /* 1. 永久等待信号量（TX_WAIT_FOREVER），无报文时线程处于挂起状态，不占用 CPU */
         if (tx_semaphore_get(&can_rx_semaphore, TX_WAIT_FOREVER) == TX_SUCCESS)
         {
             /* 2. 成功被中断唤醒，提取全局缓冲区 g_can_rx_buffer 中的硬件数据进行解析 */
@@ -256,6 +276,8 @@ void can_parse_thread_entry(ULONG thread_input)
             /* 调用业务层协议解析函数 */
             protocol_parse_ctrl_frame(g_can_rx_buffer.data, frame_len);
         }
+
+		#endif 
     }
 }
 

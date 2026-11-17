@@ -1,12 +1,18 @@
 #include "bsp.h"
 
-#define DEMO_STACK_SIZE         1024
+#define MAIN_STACK_SIZE         1024
 #define DEMO_QUEUE_SIZE         10
 #define PARSE_STACK_SIZE        2048
 
 /* --- 1. 外部变量或宏定义（根据你实际的工程修改） --- */
 #define BROADCAST_STACK_SIZE    1024        // 广播线程栈大小：1024 字节
 #define BROADCAST_PRIORITY      15          // 线程优先级（根据系统架构自行调整）
+
+
+/* --- 3. 量产关键点：动态适配底层 CAN FD 结构体的 FIFO 内存池 --- */
+#define CAN_RX_QUEUE_MAX_PACKETS    16      // 队列深度设为 16 帧，足以应对短时爆发的密集总线流
+#define PACKET_WORDS_SIZE           ((sizeof(can_rxbuf_type) + sizeof(ULONG) - 1) / sizeof(ULONG))
+
 
 
 /* --- 2. 定义 ThreadX 线程组件（全局静态分配） --- */
@@ -17,41 +23,48 @@ static uint8_t   broadcast_stack[BROADCAST_STACK_SIZE];
 
 TX_THREAD               thread_0;
 TX_THREAD               thread_1;
-TX_THREAD               thread_2;
-TX_THREAD               thread_3;
-TX_THREAD               thread_4;
-TX_THREAD               thread_5;
-TX_QUEUE                queue_0;
-TX_SEMAPHORE            semaphore_0;
-TX_SEMAPHORE            can_rx_semaphore;
+//TX_THREAD               thread_2;
+//TX_THREAD               thread_3;
+//TX_THREAD               thread_4;
+//TX_THREAD               thread_5;
+//TX_QUEUE                queue_0;
+//TX_SEMAPHORE            semaphore_0;
+//TX_SEMAPHORE            can_rx_semaphore;
+
+/* 声明 ThreadX 消息队列控制块 */
+TX_QUEUE can_rx_queue;
+
+
+
 
 TX_EVENT_FLAGS_GROUP    event_flags_0;
 
 /* Define the counters used in the demo application...  */
 
-ULONG                   thread_0_counter;
-ULONG                   thread_1_counter;
-ULONG                   thread_1_messages_sent;
-ULONG                   thread_2_counter;
-ULONG                   thread_2_messages_received;
-ULONG                   thread_3_counter;
-ULONG                   thread_4_counter;
-ULONG                   thread_5_counter;
+//ULONG                   thread_0_counter;
+//ULONG                   thread_1_counter;
+//ULONG                   thread_1_messages_sent;
+//ULONG                   thread_2_counter;
+//ULONG                   thread_2_messages_received;
+//ULONG                   thread_3_counter;
+//ULONG                   thread_4_counter;
+//ULONG                   thread_5_counter;
 
 
 /* Define the thread stacks.  */
 
-UCHAR                   thread_0_stack[DEMO_STACK_SIZE];
-UCHAR                   thread_1_stack[DEMO_STACK_SIZE];
-UCHAR                   thread_2_stack[DEMO_STACK_SIZE];
-UCHAR                   thread_3_stack[DEMO_STACK_SIZE];
-UCHAR                   thread_4_stack[DEMO_STACK_SIZE];
-UCHAR                   thread_5_stack[DEMO_STACK_SIZE];
+
+uint8_t                   thread_0_stack[MAIN_STACK_SIZE];
+uint8_t                   thread_1_stack[PARSE_STACK_SIZE];
+//UCHAR                   thread_2_stack[DEMO_STACK_SIZE];
+//UCHAR                   thread_3_stack[DEMO_STACK_SIZE];
+//UCHAR                   thread_4_stack[DEMO_STACK_SIZE];
+//UCHAR                   thread_5_stack[DEMO_STACK_SIZE];
 
 
 /* Define the queue area.  */
 
-UCHAR                   queue_0_area[DEMO_QUEUE_SIZE*sizeof(ULONG)];
+//UCHAR         queue_0_area[DEMO_QUEUE_SIZE*sizeof(ULONG)];
 
 /* 声明解析线程的控制块与堆栈 */
 TX_THREAD can_parse_thread;
@@ -60,13 +73,18 @@ uint8_t parse_thread_stack[PARSE_STACK_SIZE];
 
 
 
+
 /* Define thread prototypes.  */
 
 void    thread_0_entry(ULONG thread_input);
-void    thread_1_entry(ULONG thread_input);
-void    thread_2_entry(ULONG thread_input);
-void    thread_3_and_4_entry(ULONG thread_input);
-void    thread_5_entry(ULONG thread_input);
+//void    thread_1_entry(ULONG thread_input);
+//void    thread_2_entry(ULONG thread_input);
+//void    thread_3_and_4_entry(ULONG thread_input);
+
+/* 静态分配 ULONG 数组作为队列底层的物理连续内存块 */
+static ULONG        can_queue_memory_pool[CAN_RX_QUEUE_MAX_PACKETS * PACKET_WORDS_SIZE];
+
+
 //void    can_parse_thread_entry(ULONG thread_input);
 
 /*
@@ -74,40 +92,58 @@ void    thread_5_entry(ULONG thread_input);
 *	函 数 名: tx_application_define
 *	功能说明: ThreadX专用的任务创建，通信组件创建函数,在 ThreadX 中，数字越小优先级越高。
 *	形    参: first_unused_memory  未使用的地址空间
-*	返 回 值: 无
+*	返 回 值: 无⚠️ 核心细节：
+*             ThreadX 队列传输的单位是 4 字节（1个 ULONG）。
+*             如果你的 CAN 报文结构体总大小是 72 字节，这里的 PACKET_WORDS_SIZE 必须传入 72 / 4 = 18。
 *********************************************************************************************************
 */
 void tx_application_define(void *first_unused_memory)
 {
 
      /* 1. 优先创建用于中断与任务同步的“信号量” */
-    tx_semaphore_create(&can_rx_semaphore, "CAN_RX_Semaphore", 0);
+   // tx_semaphore_create(&can_rx_semaphore, "CAN_RX_Semaphore", 0);
+	//tx_queue_create(&can_rx_queue, "can_rx_queue", TX_1_ULONG, queue_0_area, DEMO_QUEUE_SIZE*sizeof(ULONG));
+     /* 1. 【修复】安全创建 CAN FD 专用消息队列，传入正确的结构体字长与独立存储池 */
+        /* 1. 安全创建唯一的 CAN FD 原生消息队列 */
+    /* 严格按照结构体计算出来的 ULONG 尺寸搬运，彻底规避内存越界覆写死机隐患 */
+    tx_queue_create(&can_rx_queue,                       //队列控制块指针
+                    "CAN FD RX FIFO Queue",              //队列名称
+                    PACKET_WORDS_SIZE,                   //单条消息的字长（32位字，即 ULONG 个数）。
+                    can_queue_memory_pool,               //队列内存缓冲区首地址
+                    sizeof(can_queue_memory_pool));      //内存缓冲区的总字节数
 
-    /* Create the main thread.  */
+
+
+	 /* Create the main thread.  */
 	tx_thread_create(&thread_0,           /* 任务控制块地址 */   
 					 "thread 0",          /* 任务名 */
 					 thread_0_entry,      /* 启动任务函数地址 */
 					 0,					  /* 传递给任务的参数 */
                      thread_0_stack,      /* 堆栈基地址 */
-                     DEMO_STACK_SIZE,     /* 堆栈空间大小 */  
-                     1,                   /* 任务优先级*/
-                     1,                   /* 任务抢占阀值 */
+                     MAIN_STACK_SIZE,     /* 堆栈空间大小 */  
+                     2,                   /* 任务优先级*/
+                     2,                   /* 任务抢占阀值 */
                      TX_NO_TIME_SLICE,    /* 不开启时间片 */
                      TX_AUTO_START);      /* 创建后立即启动 */
 
     /* Create threads 1 and 2. These threads pass information through a ThreadX
        message queue.  It is also interesting to note that these threads have a time
        slice.  */
-    tx_thread_create(&thread_1, 			/* 任务控制块地址 */   
-                     "thread 1",            /* 任务名 */
-                     thread_1_entry,        /* 启动任务函数地址 */
-                     1,                     /* 传递给任务的参数 */
-                     thread_1_stack,        /* 堆栈基地址 */
-                     DEMO_STACK_SIZE,       /* 堆栈空间大小 */  
-                     16,                    /* 任务优先级*/
-                     16,                    /* 任务抢占阀值 */
-                     4,                     /* 不开启时间片 */
-                     TX_AUTO_START);        /* 创建后立即启动 */
+    tx_thread_create(&thread_1, 					/* 任务控制块地址 */   
+                     "thread 1",            		/* 任务名 */
+                     can_parse_thread_entry,        /* 启动任务函数地址 */
+                     1,                     		/* 传递给任务的参数 */
+                     thread_1_stack,        		/* 堆栈基地址 */
+                     PARSE_STACK_SIZE,       		/* 堆栈空间大小 */  
+                     1,                    		/* 任务优先级*/
+                     1,                    		/* 任务抢占阀值 */
+                     4,                     		/* 不开启时间片 */
+                     TX_AUTO_START);        		/* 创建后立即启动 */
+
+}
+
+
+#if 0
 
     tx_thread_create(&thread_2,             /* 任务控制块地址 */                         
 		             "thread 2",            /* 任务名 */
@@ -185,9 +221,9 @@ void tx_application_define(void *first_unused_memory)
 
 }
 
+#endif 
 
 
-/* Define the test threads.  */
 /**
  * @brief  :  static void vTaskStart(void *pvParameters
  * @note    
@@ -199,8 +235,7 @@ void thread_0_entry(ULONG thread_input)
      /* ARMCC V5 铁律：局部变量必须在最顶部 */
     (void)thread_input; // 消除未引用警告
 
-
-    /* This thread simply sits in while-forever-sleep loop.  */
+     /* This thread simply sits in while-forever-sleep loop.  */
     while(1)
     {
         wdt_counter_reload();
@@ -208,12 +243,58 @@ void thread_0_entry(ULONG thread_input)
         /* 维持 1 秒（1000ms）执行周期，假设 1 Tick = 1ms */
         /* 只有在开机状态、且有功能正在运行，并且倒计时大于 0 时才处理 */
         power_on_off_handler();
+		LED_POWER_TOGGLE();
 	
-		tx_thread_sleep(50);//10ms * 50 = 500ms .
+		tx_thread_sleep(20);//10ms * 50 = 500ms .
     }
+}
+/* Define the test threads.  */
+/**
+ * @brief  :  entry 1
+ * @note    
+ * @param   None
+ * @retval  None
+ */
+
+#if 0
+
+void thread_1_entry(ULONG thread_input)
+{
+
+UINT    status;
+
+   #if 0
+
+    /* This thread simply sends messages to a queue shared by thread 2.  */
+    while(1)
+    {
+	       status =  tx_semaphore_get(&can_rx_semaphore, TX_WAIT_FOREVER);
+	
+		   /* Check status.  */
+		   if (status != TX_SUCCESS){
+			   break;
+
+		   }
+		  /* --- 接收成功（获取信号量成功）的逻辑 --- */
+        // 例如：打印调试信息、处理接收到的数据或更新状态标志
+         // printf("Semaphore received successfully!\n");
+    }
+
+	#endif 
 }
 
 
+
+
+
+
+
+/**
+ * @brief  :  
+ * @note    
+ * @param   None
+ * @retval  None
+ */
 void thread_1_entry(ULONG thread_input)
 {
 
@@ -239,6 +320,13 @@ UINT    status;
     }
 }
 
+
+/**
+ * @brief  :  static void vTaskStart(void *pvParameters
+ * @note    
+ * @param   None
+ * @retval  None
+ */
 
 void    thread_2_entry(ULONG thread_input)
 {
@@ -328,4 +416,4 @@ ULONG   actual_flags;
     }
 }
 
-
+#endif 
