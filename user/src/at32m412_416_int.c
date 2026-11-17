@@ -205,7 +205,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* add user code begin SysTick_IRQ 0 */
-__tx_SysTickHandler(); /* ?? ThreadX ?????? */
+   __tx_SysTickHandler(); /* ?? ThreadX ?????? */
   /* add user code end SysTick_IRQ 0 */
 
   /* add user code begin SysTick_IRQ 1 */

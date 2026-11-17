@@ -24,6 +24,7 @@ void tmr11_irq(void)
 		  {
 			  timer_10ms_cnt = 0; // 1秒时间到，清零计数器
 			  time_counter ++;
+			  gpro_t.timr11_counter ++ ;
 			  /* 执行衣物护理机的秒倒计时逻辑 */
 			  if(g_care_status.power_status == 1 && g_care_status.remain_dry_seconds > 0)
 			  {

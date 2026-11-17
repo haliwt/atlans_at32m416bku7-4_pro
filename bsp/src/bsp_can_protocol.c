@@ -626,7 +626,7 @@ error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len)
 
     /* 2. 结构体初始化，清除栈内存随机值 */
     tx_struct.id = id;
-    tx_struct.tx_timestamp = 0;
+    tx_struct.tx_timestamp = false;
     tx_struct.handle = 0;
 
     /* 💡 修复 #137 报错：不能直接对数组名赋值，必须逐字节拷贝数据 💡 */

@@ -40,6 +40,18 @@
 
 
 
+typedef struct MANI_PRO_T{
+
+  uint8_t timr11_counter ;
+
+
+
+
+}_main_pro_t;
+
+extern _main_pro_t  gpro_t ;
+
+
 #endif 
 
 

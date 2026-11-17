@@ -211,27 +211,30 @@ void wk_tmr10_init(void)
   */
 void wk_tmr11_init(void)
 {
-  /* add user code begin tmr11_init 0 */
+  
+	/* add user code begin tmr11_init 0 */
+	
+	 /* add user code end tmr11_init 0 */
+	 // T = 10ms
+	
+	 /* add user code begin tmr11_init 1 */
+	
+	 /* add user code end tmr11_init 1 */
+	 /* 1. 必须先开启 TMR11 外设总线时钟 */
+       crm_periph_clock_enable(CRM_TMR11_PERIPH_CLOCK, TRUE);
+	 /* configure counter settings */
+	 tmr_cnt_dir_set(TMR11, TMR_COUNT_UP);
+	 tmr_clock_source_div_set(TMR11, TMR_CLOCK_DIV1);
+	 tmr_repetition_counter_set(TMR11, 0);
+	 tmr_period_buffer_enable(TMR11, FALSE);
+	 tmr_base_init(TMR11, 9999, 179);
 
-  /* add user code end tmr11_init 0 */
-
-
-  /* add user code begin tmr11_init 1 */
-
-  /* add user code end tmr11_init 1 */
-
-  /* configure counter settings */
-  tmr_cnt_dir_set(TMR11, TMR_COUNT_UP);
-  tmr_clock_source_div_set(TMR11, TMR_CLOCK_DIV1);
-  tmr_repetition_counter_set(TMR11, 0);
-  tmr_period_buffer_enable(TMR11, FALSE);
-  tmr_base_init(TMR11, 59999, 29);
-
-  tmr_counter_enable(TMR11, TRUE);
-
-  /* add user code begin tmr11_init 2 */
-
-  /* add user code end tmr11_init 2 */
+	 /* 2. 必须使能 TMR11 溢出中断源（核心遗漏点） */
+      tmr_interrupt_enable(TMR11, TMR_OVF_INT, TRUE);
+	 /* 3. 必须配置并使能 CPU 的 NVIC 中断通道 */
+     nvic_irq_enable(TMR1_TRG_HALL_TMR11_IRQn, 1, 0); // 优先级可根据项目自行调整
+     
+	 tmr_counter_enable(TMR11, TRUE);
 }
 
 /* add user code begin 1 */
