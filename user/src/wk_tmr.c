@@ -59,7 +59,7 @@ void wk_tmr3_init(void)
   tmr_primary_mode_select(TMR3, TMR_PRIMARY_SEL_RESET);
 
   /* configure channel 2 output settings */
-  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_OFF;
+  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_A;//TMR_OUTPUT_CONTROL_OFF;
   tmr_output_struct.oc_output_state = TRUE;
   tmr_output_struct.occ_output_state = FALSE;
   tmr_output_struct.oc_polarity = TMR_OUTPUT_ACTIVE_HIGH;
@@ -117,7 +117,7 @@ void wk_tmr4_init(void)
   tmr_primary_mode_select(TMR4, TMR_PRIMARY_SEL_RESET);
 
   /* configure channel 3 output settings */
-  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_OFF;
+  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_A;//TMR_OUTPUT_CONTROL_OFF;
   tmr_output_struct.oc_output_state = TRUE;
   tmr_output_struct.occ_output_state = FALSE;
   tmr_output_struct.oc_polarity = TMR_OUTPUT_ACTIVE_HIGH;
@@ -153,6 +153,7 @@ void wk_tmr10_init(void)
   gpio_default_para_init(&gpio_init_struct);
 
   /* add user code begin tmr10_init 1 */
+   crm_periph_clock_enable(CRM_TMR10_PERIPH_CLOCK, TRUE); //WT.EDIT 2026-11-18
 
   /* add user code end tmr10_init 1 */
 
@@ -173,7 +174,7 @@ void wk_tmr10_init(void)
   tmr_base_init(TMR10, 249, 179);
 
   /* configure channel 1 output settings */
-  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_OFF;
+  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_A;
   tmr_output_struct.oc_output_state = TRUE;
   tmr_output_struct.occ_output_state = FALSE;
   tmr_output_struct.oc_polarity = TMR_OUTPUT_ACTIVE_HIGH;
@@ -183,6 +184,8 @@ void wk_tmr10_init(void)
   tmr_output_channel_config(TMR10, TMR_SELECT_CHANNEL_1, &tmr_output_struct);
   tmr_channel_value_set(TMR10, TMR_SELECT_CHANNEL_1, 0);
   tmr_output_channel_buffer_enable(TMR10, TMR_SELECT_CHANNEL_1, FALSE);
+
+  tmr_output_channel_immediately_set(TMR10, TMR_SELECT_CHANNEL_1, FALSE);
 
   /* configure break and dead-time settings */
   tmr_brkdt_struct.brk_enable = FALSE;

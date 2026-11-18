@@ -12,7 +12,7 @@ void buzzer_sound_on(void)
 	tmr_counter_enable(TMR10, TRUE);
 	
 	/* output PWM for 10ms */
-	tx_thread_sleep(20);
+	tx_thread_sleep(2);
 	
 	/* turn off TMR10 */
 	tmr_counter_enable(TMR10, FALSE);
