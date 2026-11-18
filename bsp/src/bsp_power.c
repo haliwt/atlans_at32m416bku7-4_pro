@@ -35,6 +35,20 @@ static Task_Config_t g_tasks[] = {
 #define TASK_COUNT     (sizeof(g_tasks) / sizeof(Task_Config_t))
 
 static void care_hardware_output_update(void);
+/************************************************************************
+ *
+ * Function Name:void power_on_cycle_handler(void)
+ * 功能:
+ * 参数:无
+ * 返回值:无
+ *
+ ************************************************************************/
+ void power_dc_power_handler(void)
+{
+
+
+}
+
 
 /************************************************************************
  *

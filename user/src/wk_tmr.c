@@ -36,7 +36,7 @@ void wk_tmr3_init(void)
   gpio_default_para_init(&gpio_init_struct);
 
   /* add user code begin tmr3_init 1 */
-
+   crm_periph_clock_enable(CRM_TMR3_PERIPH_CLOCK, TRUE); //WT.EDIT 2026-11-18
   /* add user code end tmr3_init 1 */
 
   /* configure the tmr3 CH2 pin */
@@ -94,7 +94,7 @@ void wk_tmr4_init(void)
   gpio_default_para_init(&gpio_init_struct);
 
   /* add user code begin tmr4_init 1 */
-
+   crm_periph_clock_enable(CRM_TMR4_PERIPH_CLOCK, TRUE); //WT.EDIT 2026-11-18
   /* add user code end tmr4_init 1 */
 
   /* configure the tmr4 CH3 pin */
