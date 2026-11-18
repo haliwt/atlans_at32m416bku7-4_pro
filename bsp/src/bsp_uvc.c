@@ -28,3 +28,26 @@ void uvc_led_off(void)
 
 }
 
+
+/**
+ * @brief  设置 TMR4 通道 3 (DIM_PWM) 的占空比
+ * @param  duty_percent: 占空比百分比 (0 ~ 100)
+ * @retval None
+ */
+void wk_tmr4_ch3_set_duty(uint8_t duty_percent)
+{
+  uint32_t pulse_value = 0;
+
+  /* 限制输入范围在 0 ~ 100 之间 */
+  if (duty_percent > 100)
+  {
+    duty_percent = 100;
+  }
+
+  /* 根据 ARR = 59999 计算对应的比较值 (Period = 59999, 实际总计数点位 = 60000) */
+  pulse_value = (uint32_t)(60000 * duty_percent) / 100;
+
+  /* 如果要输出严格的 50%，pulse_value 即为 30000 */
+  tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_3, pulse_value);
+}
+

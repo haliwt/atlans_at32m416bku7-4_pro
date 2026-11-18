@@ -21,7 +21,7 @@
 
 /**
   * @brief  init tmr3 function.
-  * @param  none
+  * @param  none  FAN PWM IS 25KHZ
   * @retval none
   */
 void wk_tmr3_init(void)
@@ -78,8 +78,8 @@ void wk_tmr3_init(void)
 }
 
 /**
-  * @brief  init tmr4 function.
-  * @param  none
+  * @brief  init tmr4 function. DIM_PWM
+  * @param  none DIM_PWM 1KHZ
   * @retval none
   */
 void wk_tmr4_init(void)
@@ -137,7 +137,7 @@ void wk_tmr4_init(void)
 
 /**
   * @brief  init tmr10 function.
-  * @param  none
+  * @param  none BUZZER IS 4KHZ
   * @retval none
   */
 void wk_tmr10_init(void)
@@ -170,7 +170,7 @@ void wk_tmr10_init(void)
   tmr_clock_source_div_set(TMR10, TMR_CLOCK_DIV1);
   tmr_repetition_counter_set(TMR10, 0);
   tmr_period_buffer_enable(TMR10, FALSE);
-  tmr_base_init(TMR10, 44999, 0);
+  tmr_base_init(TMR10, 249, 179);
 
   /* configure channel 1 output settings */
   tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_OFF;
@@ -232,7 +232,7 @@ void wk_tmr11_init(void)
 	 /* 2. 必须使能 TMR11 溢出中断源（核心遗漏点） */
       tmr_interrupt_enable(TMR11, TMR_OVF_INT, TRUE);
 	 /* 3. 必须配置并使能 CPU 的 NVIC 中断通道 */
-     nvic_irq_enable(TMR1_TRG_HALL_TMR11_IRQn, 1, 0); // 优先级可根据项目自行调整
+    // nvic_irq_enable(TMR1_TRG_HALL_TMR11_IRQn, 1, 0); // 优先级可根据项目自行调整
      
 	 tmr_counter_enable(TMR11, TRUE);
 }

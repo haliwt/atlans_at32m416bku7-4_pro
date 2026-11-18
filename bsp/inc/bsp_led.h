@@ -10,6 +10,9 @@
 #define LED_1_ON()           do{GPIOA->scr  = LED_1_PIN;}while(0)
 #define LED_1_OFF()          do{GPIOA ->clr = LED_1_PIN;}while(0)
 
+void led_1_blink_1s(void);
+
+
 
 #endif 
 

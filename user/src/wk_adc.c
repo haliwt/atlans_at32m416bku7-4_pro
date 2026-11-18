@@ -75,17 +75,17 @@ void wk_adc2_init(void)
 
   /*gpio--------------------------------------------------------------------*/ 
   /* configure the IN0 pin */
-  gpio_init_struct.gpio_mode = GPIO_MODE_ANALOG;
+  gpio_init_struct.gpio_mode = GPIO_MODE_ANALOG;  //FAM ADC
   gpio_init_struct.gpio_pins = GPIO_PINS_0;
   gpio_init(GPIOA, &gpio_init_struct);
 
   /* configure the IN1 pin */
-  gpio_init_struct.gpio_mode = GPIO_MODE_ANALOG;
+  gpio_init_struct.gpio_mode = GPIO_MODE_ANALOG;  //LIGHT ADC
   gpio_init_struct.gpio_pins = GPIO_PINS_1;
   gpio_init(GPIOA, &gpio_init_struct);
 
   /* configure the IN5 pin */
-  gpio_init_struct.gpio_mode = GPIO_MODE_ANALOG;
+  gpio_init_struct.gpio_mode = GPIO_MODE_ANALOG;   //PTC ADC
   gpio_init_struct.gpio_pins = GPIO_PINS_5;
   gpio_init(GPIOA, &gpio_init_struct);
 

@@ -5,9 +5,10 @@
 
 
 
-void power_on_off_handler(void);
 
 
+
+void power_on_cycle_handler(void);
 
 
 #endif 

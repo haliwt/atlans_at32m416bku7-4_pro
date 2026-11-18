@@ -2,7 +2,8 @@
 
 #define MAIN_STACK_SIZE         1024
 #define DEMO_QUEUE_SIZE         10
-#define PARSE_STACK_SIZE        2048
+#define PARSE_STACK_SIZE        1024
+#define BROADCAST_STACK_SIZE    512
 
 /* --- 1. 外部变量或宏定义（根据你实际的工程修改） --- */
 #define BROADCAST_STACK_SIZE    1024        // 广播线程栈大小：1024 字节
@@ -23,7 +24,7 @@ static uint8_t   broadcast_stack[BROADCAST_STACK_SIZE];
 
 TX_THREAD               thread_0;
 TX_THREAD               thread_1;
-//TX_THREAD               thread_2;
+TX_THREAD               thread_2;
 //TX_THREAD               thread_3;
 //TX_THREAD               thread_4;
 //TX_THREAD               thread_5;
@@ -56,7 +57,7 @@ TX_EVENT_FLAGS_GROUP    event_flags_0;
 
 uint8_t                   thread_0_stack[MAIN_STACK_SIZE];
 uint8_t                   thread_1_stack[PARSE_STACK_SIZE];
-//UCHAR                   thread_2_stack[DEMO_STACK_SIZE];
+uint8_t                   thread_2_stack[BROADCAST_STACK_SIZE];
 //UCHAR                   thread_3_stack[DEMO_STACK_SIZE];
 //UCHAR                   thread_4_stack[DEMO_STACK_SIZE];
 //UCHAR                   thread_5_stack[DEMO_STACK_SIZE];
@@ -76,7 +77,11 @@ uint8_t parse_thread_stack[PARSE_STACK_SIZE];
 
 /* Define thread prototypes.  */
 
-void    thread_0_entry(ULONG thread_input);
+void  thread_main_entry(ULONG thread_input);
+void  can_parse_thread_entry(ULONG thread_input);
+
+void  can_broadcast_thread_entry(ULONG thread_input);
+
 //void    thread_1_entry(ULONG thread_input);
 //void    thread_2_entry(ULONG thread_input);
 //void    thread_3_and_4_entry(ULONG thread_input);
@@ -117,7 +122,7 @@ void tx_application_define(void *first_unused_memory)
 	 /* Create the main thread.  */
 	tx_thread_create(&thread_0,           /* 任务控制块地址 */   
 					 "thread 0",          /* 任务名 */
-					 thread_0_entry,      /* 启动任务函数地址 */
+					 thread_main_entry,      /* 启动任务函数地址 */
 					 0,					  /* 传递给任务的参数 */
                      thread_0_stack,      /* 堆栈基地址 */
                      MAIN_STACK_SIZE,     /* 堆栈空间大小 */  
@@ -140,21 +145,22 @@ void tx_application_define(void *first_unused_memory)
                      4,                     		/* 不开启时间片 */
                      TX_AUTO_START);        		/* 创建后立即启动 */
 
-}
 
+
+    tx_thread_create(&thread_2,             			/* 任务控制块地址 */                         
+		             "thread 2",            			/* 任务名 */
+		             can_broadcast_thread_entry,        /* 启动任务函数地址 */
+		             2,                     			/* 传递给任务的参数 */
+                     thread_2_stack,        /* 堆栈基地址 */
+                     BROADCAST_STACK_SIZE,       /* 堆栈空间大小 */  
+                     3,                    /* 任务优先级*/
+                     3,                    /* 任务抢占阀值 */
+                     4,                     /* 不开启时间片 */
+                     TX_AUTO_START);         /* 创建后立即启动 */
+}
 
 #if 0
 
-    tx_thread_create(&thread_2,             /* 任务控制块地址 */                         
-		             "thread 2",            /* 任务名 */
-		             thread_2_entry,        /* 启动任务函数地址 */
-		             2,                     /* 传递给任务的参数 */
-                     thread_2_stack,        /* 堆栈基地址 */
-                     DEMO_STACK_SIZE,       /* 堆栈空间大小 */  
-                     16,                    /* 任务优先级*/
-                     16,                    /* 任务抢占阀值 */
-                     4,                     /* 不开启时间片 */
-                     TX_AUTO_START);         /* 创建后立即启动 */
 
 	   tx_thread_create(&can_parse_thread,          /* 任务控制块地址 */                         
 		             "can_fd_parse_task",           /* 任务名 */
@@ -230,7 +236,7 @@ void tx_application_define(void *first_unused_memory)
  * @param   None
  * @retval  None
  */
-void thread_0_entry(ULONG thread_input)
+void thread_main_entry(ULONG thread_input)
 {
      /* ARMCC V5 铁律：局部变量必须在最顶部 */
     (void)thread_input; // 消除未引用警告
@@ -242,19 +248,66 @@ void thread_0_entry(ULONG thread_input)
        
         /* 维持 1 秒（1000ms）执行周期，假设 1 Tick = 1ms */
         /* 只有在开机状态、且有功能正在运行，并且倒计时大于 0 时才处理 */
-        power_on_off_handler();
+        power_on_cycle_handler();
 		LED_POWER_TOGGLE();
+		led_1_blink_1s();
 	
-		tx_thread_sleep(20);//10ms * 50 = 500ms .
+		tx_thread_sleep(20);//10ms * 20 = 200ms .
     }
 }
-/* Define the test threads.  */
 /**
  * @brief  :  entry 1
  * @note    
  * @param   None
  * @retval  None
  */
+ /* 2. CAN 广播线程入口函数 */
+
+void  can_parse_thread_entry(ULONG thread_input)
+{
+      /* 声明线程私有的报文接收实体，确保线程安全 */
+    can_rxbuf_type local_rx_packet; 
+	uint8_t frame_len;
+
+
+    while(1){
+         /* 1. 阻塞等待队列中的数据。
+         * 如果队列为空，线程挂起不占 CPU；一旦中断投递了新报文，线程立即被唤醒。
+         */
+         if(tx_queue_receive(&can_rx_queue, &local_rx_packet, TX_WAIT_FOREVER)== TX_SUCCESS){
+
+              /* 2. 从收到的结构体中提取真实的字节长度并解析 */
+               frame_len = (uint8_t)local_rx_packet.data_length; 
+            
+               protocol_parse_ctrl_frame(local_rx_packet.data, frame_len);
+        }
+
+    }
+
+}
+
+/**
+ * @brief  :  entry 1
+ * @note    
+ * @param   None
+ * @retval  None
+ */
+ /* 2. CAN 广播线程入口函数 */
+void can_broadcast_thread_entry(ULONG thread_input)
+{
+     (void)thread_input; // 消除未引用警告
+	while (1)
+    {
+        /* 按照协议打包当前系统的最新状态（功能、挡位、时间、温湿度、故障码） */
+        // build_and_send_status_frame();
+        broadcast_thread_handler();
+        
+        /* 使用 ThreadX 的精准延时，控制 500ms 周期 
+         * 假设你的系统 Tick 是 1ms (100 ticks = 1秒，那么 500ms = 50 ticks)
+         */
+        tx_thread_sleep(50); 
+    }
+}
 
 #if 0
 

@@ -7,6 +7,7 @@ void uvc_led_on(void);
 void uvc_led_off(void);
 
 
+void wk_tmr4_ch3_set_duty(uint8_t duty_percent);
 
 
 

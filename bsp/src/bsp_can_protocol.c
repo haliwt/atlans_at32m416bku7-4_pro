@@ -86,7 +86,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 
     switch (func_code)
     {
-        case FUNC_POWER: // 开关机控制
+        case FUNC_NONE: // 开关机控制
             if (gear_param == 0x00)      // 关机
             {
                 g_care_status.power_status = 0;
@@ -99,12 +99,14 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
             }
             else if (gear_param == 0x04) // 开机
             {
-                g_care_status.power_status = 1;
+               // g_care_status.power_status = 1;
             }
             break;
 
        
         case FUNC_DEODORIZE: // 除异味
+
+		    gpro_t.active_process_func = FUNC_DEODORIZE ;
 
 		   if (gear_param == 0x00) // 关闭当前过程型功能
               {
@@ -113,7 +115,8 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 	                g_care_status.dry_func_en = false;
 					g_care_status.process_deodorize_fan_speed =0;
 	                g_care_status.remain_deodorize_seconds = 0;
-			
+					gpro_t.process_gear = 0;
+			        gpro_t.active_process_func = FUNC_DEODORIZE;
 
 					return ;
                }
@@ -122,14 +125,12 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 				if (gear_param >= 0x01 && gear_param <= 0x03)
 				{
                     g_care_status.power_deodorize_status = true;
-					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
+					//g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
 					g_care_status.process_gear = gear_param;
-					g_care_status.process_deodorize_fan_speed  = func_code;
+					g_care_status.process_deodorize_fan_speed  = gear_param ;
 					
-				}   
-
-				if (func_code == FUNC_DEODORIZE) //除异味
-				{
+					gpro_t.process_gear = gear_param;
+			
 					if (gear_param == 1) g_care_status.remain_deodorize_seconds= 30 * 60;
 					else if (gear_param == 2) g_care_status.remain_deodorize_seconds = 45 * 60;
 					else if (gear_param == 3) g_care_status.remain_deodorize_seconds = 60 * 60;
@@ -138,7 +139,9 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 
 		break;
 
-        case FUNC_MITES:     // 除螨
+        case FUNC_MITE:     // 除螨
+
+		     gpro_t.active_process_func = FUNC_MITE;
 
 		     if (gear_param == 0x00) // 关闭当前过程型功能
                 {
@@ -147,6 +150,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 	                g_care_status.dry_func_en = false;
 	                g_care_status.process_mites_fan_speed =0;
 					g_care_status.remain_mites_seconds = 0;
+					gpro_t.process_gear = 0;
 					
 			        return ;
                 }
@@ -156,27 +160,34 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
                     g_care_status.power_mites_status = true;
 					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
 					g_care_status.process_gear = gear_param;
-					g_care_status.process_mites_fan_speed  = func_code;
+					g_care_status.process_mites_fan_speed  = gear_param ;
+
+					gpro_t.process_gear = gear_param;
+
+					if (gear_param == 1) g_care_status.remain_mites_seconds = 30 * 60;
+                    else if (gear_param == 2) g_care_status.remain_mites_seconds= 45 * 60;
+                    else if (gear_param == 3) g_care_status.remain_mites_seconds = 60 * 60;
 					
 				}  
 
-			 	if (func_code == FUNC_MITES) //除螨虫
-                    {
-                        if (gear_param == 1) g_care_status.remain_mites_seconds = 30 * 60;
-                        else if (gear_param == 2) g_care_status.remain_mites_seconds= 45 * 60;
-                        else if (gear_param == 3) g_care_status.remain_mites_seconds = 60 * 60;
-                    }
+			 	
+             
+                    
 
 		break;
+				
         case FUNC_DISINFECT: // 消毒
+
+		   gpro_t.active_process_func = FUNC_DISINFECT;
 
 		if (gear_param == 0x00) // 关闭当前过程型功能
                 {
-	                g_care_status.power_disingfect_status = false;
-	                g_care_status.disingfect_gear = 0;
+	                g_care_status.power_disinfect_status = false;
+	                g_care_status.disinfect_gear = 0;
 	                g_care_status.dry_func_en = false;
 	                g_care_status.remain_disingfect_seconds = 0;
-					g_care_status.process_disingfect_fan_speed =0;
+					g_care_status.process_disinfect_fan_speed =0;
+					gpro_t.process_gear = 0;
 
 					return ;
                 }
@@ -184,16 +195,12 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 		       if (gear_param >= 0x01 && gear_param <= 0x03)
 				{
                    // g_care_status.power_status = 1;
-                    g_care_status.power_disingfect_status = true;
+                    g_care_status.power_disinfect_status = true;
 					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03,0x04
 					g_care_status.process_gear = gear_param;
-					g_care_status.process_disingfect_fan_speed  = func_code;
-					
-				} 
-
-			    // 根据协议设定动态初始化剩余时间 (以消毒为例)
-                 if (func_code == FUNC_DISINFECT)
-                  {
+					g_care_status.process_disinfect_fan_speed  = gear_param ;
+			
+                         gpro_t.process_gear = gear_param;
                         if (gear_param == 1)g_care_status.remain_disingfect_seconds  = 30 * 60;
                         else if (gear_param == 2) g_care_status.remain_disingfect_seconds  = 45 * 60;
                         else if (gear_param == 3) g_care_status.remain_disingfect_seconds = 60 * 60;
@@ -206,11 +213,15 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 				 
         case FUNC_DRY: // 干燥控制 (可与过程型并行)
 
+		     gpro_t.active_process_func = FUNC_DRY;
+
                 if (gear_param == 0x00) // 关闭当前过程型功能
                 {
 	                g_care_status.power_dry_status = false;
 	                g_care_status.remain_dry_seconds = 0;
 				    g_care_status.process_dry_fan_speed =0;
+					gpro_t.process_gear = 0;
+					gpro_t.is_dry_active = false;
 
 					return ;
                 }
@@ -218,18 +229,17 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 				if (gear_param >= 0x01 && gear_param <= 0x03)
 				{
                    // g_care_status.power_status = 1;
-                    g_care_status.power_dry_status = true;
+                   // g_care_status.power_dry_status = true;
+				    gpro_t.is_dry_active = true;
 					g_care_status.process_func = func_code; // 对应 0x01, 0x02, 0x03
 					g_care_status.dry_gear = gear_param;
 					g_care_status.process_dry_fan_speed  = func_code;
-					
-				} 
-                if (func_code == FUNC_DRY) //烘干
-                    {
-                        if (gear_param == 1) g_care_status.remain_dry_seconds = 30 * 60;
-                        else if (gear_param == 2) g_care_status.remain_dry_seconds = 45 * 60;
-                        else if (gear_param == 3) g_care_status.remain_dry_seconds = 60 * 60;
-                    }
+					gpro_t.process_gear = gear_param;
+				
+                     if (gear_param == 1) g_care_status.remain_dry_seconds = 30 * 60;
+                     else if (gear_param == 2) g_care_status.remain_dry_seconds = 45 * 60;
+                     else if (gear_param == 3) g_care_status.remain_dry_seconds = 60 * 60;
+                 }
                    
                 
    
@@ -244,15 +254,13 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
   * @brief  ThreadX 独立的 CAN FD 协议接收与业务解析任务 (线程)
   * @note   无数据时休眠，有数据时被激活，保证极致的实时响应与低功耗
   */
-void can_parse_thread_entry(ULONG thread_input)
+void can_parse_thread_handler(void)
 {
 
      /* 声明线程私有的报文接收实体，确保线程安全 */
     can_rxbuf_type local_rx_packet; 
 	uint8_t frame_len;
 
-	while (1)
-    {
 
     #if 1
          /* 1. 阻塞等待队列中的数据。
@@ -278,15 +286,15 @@ void can_parse_thread_entry(ULONG thread_input)
         }
 
 		#endif 
-    }
-}
+ }
+
 
 /**
   * @brief  ThreadX 500ms 周期状态广播发送线程
   * @param  thread_input: 线程输入参数
   * @retval 无
   */
-void broadcast_thread_entry(ULONG thread_input)
+void broadcast_thread_handler(void)
 {
     uint8_t tx_buf[13]; // 帧头(1) + 广播地址(2) + 长度(1) + 数据域(7) + 校验(1) + 帧尾(1) = 13 字节
 
@@ -330,7 +338,7 @@ void broadcast_thread_entry(ULONG thread_input)
         AT32_CANFD_SendData(CAN_ID_BROADCAST, tx_buf, 13);
 
         /* 10. 维持线程 500ms 周期（假设 1 Tick = 10ms） */
-        tx_thread_sleep(50);
+        //tx_thread_sleep(50);
     }
 }
 

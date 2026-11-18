@@ -14,13 +14,14 @@
 #define FRAME_HEADER        0xAA
 #define FRAME_TAIL          0x55
 
+#if 0
 /* 功能码定义 (Byte 0) */
 #define FUNC_DEODORIZE      0x01        // 除异味
 #define FUNC_MITES          0x02        // 除螨
 #define FUNC_DISINFECT      0x03        // 消毒
 #define FUNC_DRY            0x04        // 干燥
 #define FUNC_POWER          0x05        // 开关机
-
+#endif 
 /* 故障码定义 */
 #define FAULT_NONE          0x00        // 无故障
 #define FAULT_DOOR          0x01        // 门开关异常 (E1)
@@ -31,7 +32,7 @@
 /* 护理机内部运行状态结构体 */
 typedef struct {
     uint8_t  power_status;      // 0: 关机/待机, 1: 开机/就绪
-    bool  power_disingfect_status ;
+    bool  power_disinfect_status ;
 	bool  power_deodorize_status ;
 	bool  power_mites_status ;
 	bool  power_dry_status;
@@ -42,11 +43,11 @@ typedef struct {
     uint8_t  dry_gear;          // 干燥功能挡位 (0~3)
     uint8_t  deodorize_gear;
 	uint8_t  mites_gear;
-	uint8_t  disingfect_gear;
+	uint8_t  disinfect_gear;
     
     uint8_t   process_deodorize_fan_speed ;
 	uint8_t   process_mites_fan_speed ;
-	uint8_t   process_disingfect_fan_speed ;
+	uint8_t   process_disinfect_fan_speed ;
 	uint8_t   process_dry_fan_speed ;
 
 	
@@ -72,8 +73,8 @@ extern can_rxbuf_type g_can_rx_buffer;
 
 /* 函数声明 */
 void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len);
-void can_parse_thread_entry(ULONG thread_input); // 新增解析线程
-void broadcast_thread_entry(ULONG thread_input);
+void can_parse_thread_handler(); // 新增解析线程
+void broadcast_thread_handler(void);
 
 /* 硬件底层 CAN FD 发送接口伪代码，对接 AT32 硬件时需根据标准库实现 */
 error_status AT32_CANFD_SendData(uint32_t id, uint8_t *p_data, uint8_t len);

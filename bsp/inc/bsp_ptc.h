@@ -7,6 +7,8 @@
 #define DRY_ON()      do{PTC_GPIO_PORT ->scr = PTC_GPIO_PIN;}while(0)
 #define DRY_OFF()     do{PTC_GPIO_PORT ->clr = PTC_GPIO_PIN;}while(0)
 
+int8_t ptc_temperature_monitor_handler(uint16_t *current_temp_mv, uint8_t *p_alarm_state);
+
 
 
 #endif 

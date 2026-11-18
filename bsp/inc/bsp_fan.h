@@ -10,6 +10,8 @@ void fan_set_gear(uint8_t fan_speed);
 
 void fan_stop(void);
 
+int8_t fan_presence_monitor_handler(uint16_t *current_fan_mv, uint8_t *p_fan_status);
+
 
 
 #endif 

@@ -5,7 +5,7 @@ void buzzer_sound_on(void)
 {
 
 	/* 50% duty cycle */
-	 tmr_channel_value_set(TMR10, TMR_SELECT_CHANNEL_1, 22500);
+	 tmr_channel_value_set(TMR10, TMR_SELECT_CHANNEL_1, 125);
 	
 	/* make sure the timer is running and the output is enabled */
 	tmr_output_enable(TMR10, TRUE);

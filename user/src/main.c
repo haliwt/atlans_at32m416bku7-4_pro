@@ -126,6 +126,7 @@ int main(void)
   wk_tmr11_init();
 
   /* add user code begin 2 */
+   bsp_init();
    tx_kernel_enter();
   /* add user code end 2 */
 
