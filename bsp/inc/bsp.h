@@ -65,6 +65,9 @@ typedef struct MANI_PRO_T{
 
   uint8_t timr11_counter ;
 
+  bool power_on_flag;
+  uint8_t mode_counter_flag;
+
   uint8_t dc_power;
 
   int16_t aht30_temperature_value;

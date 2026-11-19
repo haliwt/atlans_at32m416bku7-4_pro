@@ -54,7 +54,6 @@ void power_main_power_handler(void)
   if(gpro_t.dc_power < 7){
 	  AHT30_Init();
 	  care_machine_init();
-	  buzzer_sound_on();
 	  gpro_t.dc_power = 0xf0;  
   }
   else{

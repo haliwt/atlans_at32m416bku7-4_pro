@@ -4,6 +4,7 @@
 #define DEMO_QUEUE_SIZE         10
 #define PARSE_STACK_SIZE        1024
 #define BROADCAST_STACK_SIZE    512
+#define KEY_STACK_SIZE           512
 
 /* --- 1. 外部变量或宏定义（根据你实际的工程修改） --- */
 #define BROADCAST_STACK_SIZE    1024        // 广播线程栈大小：1024 字节
@@ -25,7 +26,7 @@ static uint8_t   broadcast_stack[BROADCAST_STACK_SIZE];
 TX_THREAD               thread_0;
 TX_THREAD               thread_1;
 TX_THREAD               thread_2;
-//TX_THREAD               thread_3;
+TX_THREAD               thread_3;
 //TX_THREAD               thread_4;
 //TX_THREAD               thread_5;
 //TX_QUEUE                queue_0;
@@ -58,7 +59,7 @@ TX_EVENT_FLAGS_GROUP    event_flags_0;
 uint8_t                   thread_0_stack[MAIN_STACK_SIZE];
 uint8_t                   thread_1_stack[PARSE_STACK_SIZE];
 uint8_t                   thread_2_stack[BROADCAST_STACK_SIZE];
-//UCHAR                   thread_3_stack[DEMO_STACK_SIZE];
+uint8_t 				  thread_3_stack[KEY_STACK_SIZE];
 //UCHAR                   thread_4_stack[DEMO_STACK_SIZE];
 //UCHAR                   thread_5_stack[DEMO_STACK_SIZE];
 
@@ -81,8 +82,7 @@ void  thread_main_entry(ULONG thread_input);
 void  can_parse_thread_entry(ULONG thread_input);
 
 void  can_broadcast_thread_entry(ULONG thread_input);
-
-//void    thread_1_entry(ULONG thread_input);
+void  key_thread_entry(ULONG thread_input);
 //void    thread_2_entry(ULONG thread_input);
 //void    thread_3_and_4_entry(ULONG thread_input);
 
@@ -140,9 +140,9 @@ void tx_application_define(void *first_unused_memory)
                      1,                     		/* 传递给任务的参数 */
                      thread_1_stack,        		/* 堆栈基地址 */
                      PARSE_STACK_SIZE,       		/* 堆栈空间大小 */  
-                     1,                    		/* 任务优先级*/
-                     1,                    		/* 任务抢占阀值 */
-                     4,                     		/* 不开启时间片 */
+                     1,                    			/* 任务优先级*/
+                     1,                    			/* 任务抢占阀值 */
+                     TX_NO_TIME_SLICE,                     		/* 不开启时间片 */
                      TX_AUTO_START);        		/* 创建后立即启动 */
 
 
@@ -155,23 +155,26 @@ void tx_application_define(void *first_unused_memory)
                      BROADCAST_STACK_SIZE,       /* 堆栈空间大小 */  
                      3,                    /* 任务优先级*/
                      3,                    /* 任务抢占阀值 */
-                     4,                     /* 不开启时间片 */
+                     TX_NO_TIME_SLICE,                     /* 不开启时间片 */
                      TX_AUTO_START);         /* 创建后立即启动 */
-}
-
-#if 0
 
 
-	   tx_thread_create(&can_parse_thread,          /* 任务控制块地址 */                         
-		             "can_fd_parse_task",           /* 任务名 */
-		             can_parse_thread_entry,        /* 启动任务函数地址 */
-		             0,                             /* 传递给任务的参数 */
-                     parse_thread_stack,            /* 堆栈基地址 */
-                     PARSE_STACK_SIZE,       		/* 堆栈空间大小 */  
-                     1,                    			/* 任务优先级*/
-                     1,                           	/* 任务抢占阀值 */
+
+	   tx_thread_create(&thread_3,          	/* 任务控制块地址 */                         
+		             "thread_3",           		/* 任务名 */
+		             key_thread_entry,        	/* 启动任务函数地址 */
+		             0,                         /* 传递给任务的参数 */
+                     thread_3_stack,            /* 堆栈基地址 */
+                     KEY_STACK_SIZE,       		/* 堆栈空间大小 */  
+                     0,                    			/* 任务优先级*/
+                     0,                           	/* 任务抢占阀值 */
                      TX_NO_TIME_SLICE,              /* 不开启时间片 */
                      TX_AUTO_START);                /* 创建后立即启动 */
+
+}
+	 
+#if 0
+
 
 	 /* 创建状态广播发送线程 */
     tx_thread_create(&broadcast_thread,             // 线程控制块指针
@@ -239,18 +242,37 @@ void tx_application_define(void *first_unused_memory)
 void thread_main_entry(ULONG thread_input)
 {
      /* ARMCC V5 铁律：局部变量必须在最顶部 */
-    (void)thread_input; // 消除未引用警告
+	static uint8_t dc_first_flag=0 ;
 
+    (void)thread_input; // 消除未引用警告
+	
+ 
      /* This thread simply sits in while-forever-sleep loop.  */
     while(1)
     {
         wdt_counter_reload();
-       
+
+		if(gpro_t.power_on_flag == true){
         /* 维持 1 秒（1000ms）执行周期，假设 1 Tick = 1ms */
         /* 只有在开机状态、且有功能正在运行，并且倒计时大于 0 时才处理 */
         power_main_power_handler();
 		LED_POWER_TOGGLE();
 		led_1_blink_1s();
+
+		}
+		else{
+		  gpro_t.dc_power = 0;
+		  if(dc_first_flag ==0){
+			 dc_first_flag++;
+
+             buzzer_sound_on();
+		  }
+          LED_POWER_OFF() ;
+		  LED_1_OFF();
+		  uvc_led_off();
+
+
+		}
 	
 		tx_thread_sleep(20);//10ms * 20 = 200ms .
     }
@@ -307,6 +329,82 @@ void can_broadcast_thread_entry(ULONG thread_input)
          */
         tx_thread_sleep(50); 
     }
+}
+
+/**
+ * @brief  :  KEY TASK
+ * @note    
+ * @param   None
+ * @retval  None
+ */
+  uint8_t cur_power_pressed = 0;
+     uint8_t cur_mode_pressed  = 0;
+	 
+void  key_thread_entry(ULONG thread_input)
+{
+
+ 
+    
+
+    (void)thread_input;
+
+    while (1) {
+        /* 简单消抖：确认连续两次采样都为按下（低电平 RESET） */
+       
+
+        if (KEY_POWER_VALUE() == RESET ) {
+             if(cur_power_pressed < 10 )//tx_thread_sleep(10); /* 消抖延时（按实际 tick 频率调整） */
+             {
+                cur_power_pressed ++;
+             }
+        }
+		else if (KEY_MODE_VALUE() == RESET && gpro_t.power_on_flag == true) {
+             if(cur_mode_pressed < 10){
+			    cur_mode_pressed ++;
+			  }
+        }
+
+        if(cur_power_pressed == 10){
+			 cur_power_pressed ++;
+           buzzer_sound_on();
+           //gpro_t.power_on_flag = (gpro_t.power_on_flag == 0) ? 1 : 0;
+         
+		   if(gpro_t.power_on_flag == false )
+             gpro_t.power_on_flag = true;
+		   else 
+		   	 gpro_t.power_on_flag = false;
+		   
+        }
+		else if(KEY_POWER_VALUE() == SET){
+		    cur_power_pressed =0;
+
+         }
+
+        
+		
+
+        /* 模式键：仅在开机状态下，按下瞬间触发一次 */
+        if (cur_mode_pressed == 10){
+			  cur_mode_pressed++ ;
+                buzzer_sound_on();
+                gpro_t.mode_counter_flag++;
+                if (gpro_t.mode_counter_flag > 3) {
+                    gpro_t.mode_counter_flag = 0;
+                }
+				
+         }
+		 else if(KEY_MODE_VALUE() == SET){
+		 	cur_mode_pressed=0;
+
+		 }
+        
+         
+
+        tx_thread_sleep(2);
+    
+}
+
+
 }
 
 #if 0

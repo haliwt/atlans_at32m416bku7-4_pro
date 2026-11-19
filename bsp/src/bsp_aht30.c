@@ -204,21 +204,21 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
     // 1. 发送触发测量命令：0x70 (写地址) -> 0xAC (触发) -> 0x33 -> 0x00[cite: 12]
     I2C_Start();
     I2C_Send_Byte(0x70); 
-    if (I2C_Wait_Ack()) { I2C_Stop(); return 1; }
+    if (I2C_Wait_Ack()) { I2C_Stop(); return 0xF0; }
     
     I2C_Send_Byte(0xAC); 
-    if (I2C_Wait_Ack()) { I2C_Stop(); return 1; }
+    if (I2C_Wait_Ack()) { I2C_Stop(); return 0XF1; }
     
     I2C_Send_Byte(0x33); 
-    if (I2C_Wait_Ack()) { I2C_Stop(); return 1; }
+    if (I2C_Wait_Ack()) { I2C_Stop(); return 0XF2; }
     
     I2C_Send_Byte(0x00); 
-    if (I2C_Wait_Ack()) { I2C_Stop(); return 1; }
+    if (I2C_Wait_Ack()) { I2C_Stop(); return 0XF3; }
     
     I2C_Stop();
 
     // 2. 等待传感器转换完成（手册要求至少等待 80ms）[cite: 12, 14]
-    delay_ms(80);
+    tx_thread_sleep(8) ;//delay_ms(80);
 
     // 3. 读取 7 个字节数据：[Status][SRH_H][SRH_M][SRH_L][ST_H][ST_M][ST_L][CRC] -> 实际带 CRC 共 7 字节[cite: 12]
     I2C_Start();
@@ -229,7 +229,7 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
     data[0] = I2C_Read_Byte(1); // Status
     if (data[0] & 0x80) {       // 如果忙，说明 80ms 不够，直接返回失败
         I2C_Stop();
-        return 1;
+        return 2;
     }
 
     data[1] = I2C_Read_Byte(1); // 湿度高 8 位
@@ -242,7 +242,7 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
 
     // 4. CRC8 校验检查
     if (Calc_CRC8(data, 6) != data[6]) {
-        return 1; // 校验失败
+        return 3; // 校验失败
     }
 
     // 5. 数据转换（按照 AHT30 手册公式转为整型或扩大 10 倍以避免浮点运算）[cite: 14]

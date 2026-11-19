@@ -53,6 +53,12 @@ extern "C" {
 
 #define LED_1_PORT       GPIOA
 #define LED_1_PIN        GPIO_PINS_9
+
+#define KEY_POWER_GPIO_PORT        GPIOA
+#define KEY_POWER_GPIO_PIN         GPIO_PINS_8
+
+#define KEY_MODE_GPIO_PORT         GPIOB
+#define KEY_MODE_GPIO_PIN          GPIO_PINS_10
 /* add user code end exported types */
 
 /* exported constants --------------------------------------------------------*/
