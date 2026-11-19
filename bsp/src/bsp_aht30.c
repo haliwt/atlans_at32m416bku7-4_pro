@@ -7,7 +7,7 @@ static void delay_us(uint32_t us)
 {
     volatile uint32_t i;
 	while(us--){
-    for (i = 0; i < 45; i++) {
+    for (i = 0; i < 180; i++) {//45
         __NOP();
     }
 	}
@@ -58,36 +58,38 @@ static void SDA_IN_MODE(void)
 /* I²C 起始信号 */
 static void I2C_Start(void)
 {
-    SDA_OUT_MODE();
     SDA_HIGH();
     SCL_HIGH();
-    delay_us(5);
+    delay_us(10);
     SDA_LOW();
-    delay_us(5);
+    delay_us(10);
     SCL_LOW();
+    delay_us(10);
 }
 
 /* I²C 停止信号 */
 static void I2C_Stop(void)
 {
-    SDA_OUT_MODE();
+  
     SDA_LOW();
-    delay_us(5);
+     delay_us(10);
     SCL_HIGH();
-    delay_us(5);
+     delay_us(10);
     SDA_HIGH();
-    delay_us(5);
+     delay_us(10);
+  
 }
 
 /* 等待 ACK 响应 */
 static uint8_t I2C_Wait_Ack(void)
 {
+  
     uint8_t ucErrTime = 0;
-    SDA_IN_MODE();
+   
     SDA_HIGH();
-    delay_us(2);
+    delay_us(10);
     SCL_HIGH();
-    delay_us(2);
+    delay_us(10);
     while (READ_SDA()) {
         ucErrTime++;
         if (ucErrTime > 250) {
@@ -96,57 +98,60 @@ static uint8_t I2C_Wait_Ack(void)
         }
     }
     SCL_LOW();
+	delay_us(10);
     return 0; // ACK 成功
+ 
 }
 
 /* 发送一个字节 */
-static void I2C_Send_Byte(uint8_t txd)
+static void I2C_Send_Byte(uint8_t dat)
 {
-    uint8_t t;
-    SDA_OUT_MODE();
-    SCL_LOW(); // 拉低时钟开始数据传输
-    for (t = 0; t < 8; t++) {
-        if ((txd & 0x80) >> 7) {
+   uint8_t i;
+    for (i = 0; i < 8; i++)
+    {
+        if (dat & 0x80)
             SDA_HIGH();
-        } else {
+        else
             SDA_LOW();
-        }
-        txd <<= 1;
-        delay_us(2);
+        dat <<= 1;
+        delay_us(10);//I2C_Delay();
         SCL_HIGH();
-        delay_us(2);
+        delay_us(10);//I2C_Delay();
         SCL_LOW();
-        delay_us(2);
+        delay_us(10);//I2C_Delay();
     }
 }
 
 /* 读取一个字节 */
 static uint8_t I2C_Read_Byte(unsigned char ack)
 {
-    unsigned char i, receive = 0;
-    SDA_IN_MODE();
-    for (i = 0; i < 8; i++) {
-        SCL_LOW();
-        delay_us(2);
+    uint8_t i, dat = 0;
+    SDA_HIGH(); // 释放SDA，准备读取
+    for (i = 0; i < 8; i++)
+    {
+        dat <<= 1;
         SCL_HIGH();
-        receive <<= 1;
-        if (READ_SDA()) {
-            receive++;
+        delay_us(10);//I2C_Delay();
+        if (READ_SDA())
+        {
+            dat |= 0x01;
         }
-        delay_us(2);
+        SCL_LOW();
+        delay_us(10);//I2C_Delay();
     }
-    // 发送 ACK 或 NACK
-    SDA_OUT_MODE();
-    if (ack) {
-        SDA_LOW(); // ACK
-    } else {
-        SDA_HIGH(); // NACK
-    }
-    delay_us(2);
+    
+    if (ack)
+        SDA_LOW();  // 发送 ACK
+    else
+        SDA_HIGH(); // 发送 NACK
+    
+    delay_us(10);//I2C_Delay();
     SCL_HIGH();
-    delay_us(2);
+    delay_us(10);//I2C_Delay();
     SCL_LOW();
-    return receive;
+    delay_us(10);//I2C_Delay();
+    SDA_HIGH(); // 释放SDA
+    return dat;
 }
 
 /* AHT30 提供的 CRC8 校验函数 */
@@ -178,8 +183,6 @@ void AHT30_Init(void)
 	crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE);
 
 
-   
-    
     // 初始化 SCL (PB5) 和 SDA (PB6) 为开漏输出配合内部/外部上拉
     gpio_init_struct.gpio_pins = I2C_SCL_GPIO_PIN | I2C_SDA_GPIO_PIN;
     gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
@@ -194,12 +197,17 @@ void AHT30_Init(void)
 }
 
 /* 核心读取函数：返回 0 表示成功，返回 1 表示失败 */
+uint8_t data[7];
+
 uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
 {
     uint32_t raw_humidity;
 	uint32_t raw_temperature ;
-	
-	uint8_t data[7];
+	uint8_t crc_val;
+	//uint8_t data[7];
+
+	    // 【位置 1】在函数开头声明 ThreadX 中断状态保存变量
+    TX_INTERRUPT_SAVE_AREA
     
     // 1. 发送触发测量命令：0x70 (写地址) -> 0xAC (触发) -> 0x33 -> 0x00[cite: 12]
     I2C_Start();
@@ -220,15 +228,23 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
     // 2. 等待传感器转换完成（手册要求至少等待 80ms）[cite: 12, 14]
     tx_thread_sleep(8) ;//delay_ms(80);
 
+	// 【位置 2】开始连续读取前，关闭中断防止模拟 I2C 时序被打断
+    TX_DISABLE;
+
     // 3. 读取 7 个字节数据：[Status][SRH_H][SRH_M][SRH_L][ST_H][ST_M][ST_L][CRC] -> 实际带 CRC 共 7 字节[cite: 12]
     I2C_Start();
     I2C_Send_Byte(0x71); // 读地址[cite: 12]
-    if (I2C_Wait_Ack()) { I2C_Stop(); return 1; }
+    if (I2C_Wait_Ack()){ 
+		I2C_Stop(); 
+		TX_RESTORE; // 提前返回前必须恢复中断！
+	    return 1; 
+	}
 
     // 检查忙闲状态（可选）：如果 Status 的 bit7 为 1 表示仍在测量
     data[0] = I2C_Read_Byte(1); // Status
     if (data[0] & 0x80) {       // 如果忙，说明 80ms 不够，直接返回失败
         I2C_Stop();
+		TX_RESTORE; // 提前返回前必须恢复中断！
         return 2;
     }
 
@@ -238,11 +254,21 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
     data[4] = I2C_Read_Byte(1); // 温度中 8 位
     data[5] = I2C_Read_Byte(1); // 温度低 8 位
     data[6] = I2C_Read_Byte(0); // CRC 校验字（最后一个字节发 NACK）[cite: 12]
+    //crc_val = I2C_Read_Byte(0); // 最后的 CRC 字节，发送 NACK 结束[cite: 1]
     I2C_Stop();
+
+	// 【位置 3】总线释放后，立刻恢复系统中断
+    TX_RESTORE;
+
+	/* 4. 检查状态字的 Bit[7] 是否为忙状态（1表示忙）[cite: 1] */
+    if (data[0] & 0x80)
+    {
+        return 3; 
+    }
 
     // 4. CRC8 校验检查
     if (Calc_CRC8(data, 6) != data[6]) {
-        return 3; // 校验失败
+        return 4; // 校验失败
     }
 
     // 5. 数据转换（按照 AHT30 手册公式转为整型或扩大 10 倍以避免浮点运算）[cite: 14]

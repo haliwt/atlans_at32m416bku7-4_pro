@@ -4,10 +4,10 @@
 
 
 #define I2C_SCL_GPIO_PORT     GPIOB
-#define I2C_SCL_GPIO_PIN     GPIO_PINS_5
+#define I2C_SCL_GPIO_PIN      GPIO_PINS_6//GPIO_PINS_5
 
 #define I2C_SDA_GPIO_PORT     GPIOB
-#define I2C_SDA_GPIO_PIN      GPIO_PINS_6
+#define I2C_SDA_GPIO_PIN      GPIO_PINS_5//GPIO_PINS_6
 
 
 void AHT30_Init(void);
