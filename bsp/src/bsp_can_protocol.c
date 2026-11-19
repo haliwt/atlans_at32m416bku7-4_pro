@@ -115,7 +115,7 @@ void protocol_parse_ctrl_frame(uint8_t *p_data, uint8_t len)
 	                g_care_status.dry_func_en = false;
 					g_care_status.process_deodorize_fan_speed =0;
 	                g_care_status.remain_deodorize_seconds = 0;
-					gpro_t.process_gear = 0;
+					gpro_t.process_gear = GEAR_0;
 			        gpro_t.active_process_func = FUNC_DEODORIZE;
 
 					return ;

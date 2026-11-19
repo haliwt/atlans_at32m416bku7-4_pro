@@ -35,6 +35,12 @@ static Task_Config_t g_tasks[] = {
 #define TASK_COUNT     (sizeof(g_tasks) / sizeof(Task_Config_t))
 
 static void care_hardware_output_update(void);
+
+static void care_machine_init(void);
+
+static void power_on_cycle_handler(void);
+
+
 /************************************************************************
  *
  * Function Name:void power_on_cycle_handler(void)
@@ -43,10 +49,19 @@ static void care_hardware_output_update(void);
  * 返回值:无
  *
  ************************************************************************/
- void power_dc_power_handler(void)
+void power_main_power_handler(void)
 {
+  if(gpro_t.dc_power < 7){
+	  AHT30_Init();
+	  care_machine_init();
+	  buzzer_sound_on();
+	  gpro_t.dc_power = 0xf0;  
+  }
+  else{
+    power_on_cycle_handler();
 
 
+  }
 }
 
 
@@ -119,10 +134,11 @@ static void handler_works_hours(void)
   * @param
   * @intverl
 **/
+uint8_t check_aht30_flag;
 
 static void handler_read_aht30(void)
 {
-   uint8_t check_aht30_flag; 
+ //  uint8_t check_aht30_flag; 
   check_aht30_flag = AHT30_Read_Data(&gpro_t.aht30_temperature_value, &gpro_t.aht30_humidity_value);
   if(check_aht30_flag == 0){
 
@@ -300,5 +316,23 @@ static void care_hardware_output_update(void)
  * @input 
  * @retval 
  */
+static void care_machine_init(void)
+{
+    /* 初始化结构体变量 */
+    gpro_t.active_process_func = FUNC_NONE;
+    gpro_t.process_gear = GEAR_2;
+    gpro_t.process_countdown_s = 0;
+    gpro_t.is_process_running = false;
+    gpro_t.is_process_paused = false;
+
+    gpro_t.is_dry_active = true;     /* 干燥作为维持型功能，默认常驻 */
+    gpro_t.dry_gear = GEAR_2;        /* 默认标准档 */
+
+    gpro_t.door_closed_flag = true;
+    gpro_t.fan_fault_flag = false;
+    gpro_t.ptc_alarm_flag = false;
+
+
+}
 
 

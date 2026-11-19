@@ -6,9 +6,8 @@
 
 
 
+void power_main_power_handler(void);
 
-
-void power_on_cycle_handler(void);
 
 
 #endif 

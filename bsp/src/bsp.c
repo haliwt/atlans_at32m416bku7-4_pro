@@ -3,34 +3,15 @@
 
 _main_pro_t  gpro_t ;
 
-static void care_machine_init(void);
+//static void care_machine_init(void);
 void bsp_init(void)
 {
-  AHT30_Init();
-  care_machine_init();
-  buzzer_sound_on();
+ 
 
 
 }
 
-static void care_machine_init(void)
-{
-    /* 初始化结构体变量 */
-    gpro_t.active_process_func = FUNC_NONE;
-    gpro_t.process_gear = GEAR_2;
-    gpro_t.process_countdown_s = 0;
-    gpro_t.is_process_running = false;
-    gpro_t.is_process_paused = false;
 
-    gpro_t.is_dry_active = true;     /* 干燥作为维持型功能，默认常驻 */
-    gpro_t.dry_gear = GEAR_2;        /* 默认标准档 */
-
-    gpro_t.door_closed_flag = true;
-    gpro_t.fan_fault_flag = false;
-    gpro_t.ptc_alarm_flag = false;
-
-
-}
 
 
 /**

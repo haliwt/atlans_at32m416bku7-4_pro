@@ -54,7 +54,7 @@ typedef enum {
  * @param  *p_alarm_state: 输出当前报警状态标志位
  * @retval 0: 成功, -1: ADC采样超时/异常
  */
-int8_t ptc_temperature_monitor_handler(uint16_t *current_temp_mv, uint8_t *p_alarm_state)
+int8_t ptc_temperature_monitor_handler(uint16_t *current_temp_mv, bool *p_alarm_state)
 {
     /* 步骤 1：独立调用底层 ADC 采样函数，获取 PTC 电压（带超时保护） */
     if (get_adc2_in5_ptc_voltage_mv(current_temp_mv) != 0)

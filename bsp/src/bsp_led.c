@@ -12,8 +12,16 @@ void led_1_blink_1s(void)
         buzzer_sound_on();
         switch_f = switch_f ^ 0x01;
 
-		if(switch_f)LED_1_ON();
-		else LED_1_OFF();
+		if(switch_f){
+			LED_1_ON();
+			uvc_led_on();
+
+		}
+		else{
+			LED_1_OFF();
+		    uvc_led_off();
+
+		}
 
 
 	}

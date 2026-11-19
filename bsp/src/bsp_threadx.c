@@ -248,7 +248,7 @@ void thread_main_entry(ULONG thread_input)
        
         /* 维持 1 秒（1000ms）执行周期，假设 1 Tick = 1ms */
         /* 只有在开机状态、且有功能正在运行，并且倒计时大于 0 时才处理 */
-        power_on_cycle_handler();
+        power_main_power_handler();
 		LED_POWER_TOGGLE();
 		led_1_blink_1s();
 	

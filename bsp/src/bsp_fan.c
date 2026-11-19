@@ -109,7 +109,7 @@ typedef enum {
  * @param  *p_fan_status: 输出当前风扇状态标志位
  * @retval 0: 成功, -1: ADC采样失败
  */
-int8_t fan_presence_monitor_handler(uint16_t *current_fan_mv, uint8_t *p_fan_status)
+int8_t fan_presence_monitor_handler(uint16_t *current_fan_mv, bool *p_fan_status)
 {
     /* 步骤 1：独立调用底层采样获取风扇引脚电压 */
     if (get_fan_adc2_in0_voltage_mv(current_fan_mv) != 0)

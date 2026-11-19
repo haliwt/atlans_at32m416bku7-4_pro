@@ -34,6 +34,7 @@
 #include "bsp_power.h"
 #include "bsp_led.h"
 #include "bsp_light.h"
+#include "bsp_ntc.h"
 
 
 #include "bsp_threadx.h"
@@ -64,6 +65,8 @@ typedef struct MANI_PRO_T{
 
   uint8_t timr11_counter ;
 
+  uint8_t dc_power;
+
   int16_t aht30_temperature_value;
   int16_t aht30_humidity_value;
 
@@ -84,7 +87,7 @@ typedef struct MANI_PRO_T{
 
     /* 当前运行状态 */
     care_func_t active_process_func; /* 当前运行的过程型功能 */
-    care_gear_t process_gear;        /* 过程型功能档位 */
+    uint8_t process_gear;        /* 过程型功能档位 */
     uint16_t    process_countdown_s; /* 过程型功能倒计时（秒） */
     bool        is_process_running;  /* 过程型功能是否在运行 */
     bool        is_process_paused;   /* 是否因开门导致暂停 */
