@@ -204,6 +204,7 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
     uint32_t raw_humidity;
 	uint32_t raw_temperature ;
 	uint8_t crc_val;
+	int16_t temp_value, hum_value;
 	//uint8_t data[7];
 
 	    // 【位置 1】在函数开头声明 ThreadX 中断状态保存变量
@@ -283,8 +284,31 @@ uint8_t AHT30_Read_Data(int16_t *temperature, int16_t *humidity)
      * 温度公式: T(℃) = (raw_temperature / 2^20) * 200 - 50 
      * 为保留一位小数，将结果扩大 10 倍存储：
      */
-    *humidity = (int16_t)((raw_humidity * 1000) >> 20);           // 实际湿度 * 10
-    *temperature = (int16_t)(((raw_temperature * 2000) >> 20) - 500); // 实际温度 * 10
+    #if 1
+    hum_value = (int16_t)((raw_humidity * 1000) >> 20);           // 实际湿度 * 10 
+    temp_value = (int16_t)(((raw_temperature * 2000) >> 20) - 500); // 实际温度 *10
+
+
+	*humidity = hum_value / 10 ;
+
+	*temperature = temp_value /10 ;
+
+	#else 
+	/* 
+     * 7. 依据 AHT30 官方转换公式变换为整数[cite: 1]：
+     * 湿度公式: RH% = (raw_hum / 2^20) * 100[cite: 1]
+     * 温度公式: T℃  = (raw_temp / 2^20) * 200 - 50[cite: 1]
+     * 
+     * 注：此处加上 524288（即 2^20 的一半）是为了实现整数除法的“四舍五入”效果
+     */
+    *humidity = (int16_t)(((uint64_t)raw_humidity * 100 + 524288) / 1048576); 
+    *temperature = (int16_t)(((int64_t)raw_temperature * 200 + 524288) / 1048576) - 50;
+
+
+
+	#endif 
+
+	
 
     return 0; // 读取成功
 }
