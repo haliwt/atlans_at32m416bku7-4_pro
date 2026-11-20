@@ -1,7 +1,7 @@
 #include "bsp.h"
 
 can_rxbuf_type rx_message;
-
+uint8_t rx_can_data_flag ;
 void can_rx_isr(void)
 {
     //can_rx_message_type rx_message;
@@ -24,8 +24,8 @@ void can_rx_isr(void)
              * 4. 关键修改：将整包结构体直接发送到 ThreadX 消息队列中！
              * 注意：在中断服务函数（ISR）中，绝对不能阻塞等待，因此超时参数必须传 TX_NO_WAIT (0)。
              */
-            tx_status = tx_queue_send(&can_rx_queue, &rx_message, TX_NO_WAIT);
-            
+            //_status = tx_queue_send(&can_rx_queue, &rx_message, TX_NO_WAIT);
+            rx_can_data_flag ++;
             if (tx_status != TX_SUCCESS)
             {
                 /* 队列满时的错误处理：可以在这里记录丢包计数器 */
@@ -57,7 +57,8 @@ void can_rx_isr(void)
 		#endif 
 
         /* 5. 关键修正：使用官方正确的 CAN_RIF_FLAG 清除接收中断标志，防止死循环 */
-        can_flag_clear(CAN1, CAN_RIF_FLAG); 
+        //can_flag_clear(CAN1, CAN_RIF_FLAG); //CAN_RAFIE_INT|CAN_RFIE_INT|CAN_ROIE_INT|CAN_RIE_INT
+        can_flag_clear(CAN1,CAN_RAFIE_INT|CAN_RFIE_INT|CAN_ROIE_INT|CAN_RIE_INT);
     }
 }
 

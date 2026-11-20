@@ -2,24 +2,24 @@
 
 #define MAIN_STACK_SIZE         1024
 #define DEMO_QUEUE_SIZE         10
-#define PARSE_STACK_SIZE        1024
+#define PARSE_STACK_SIZE        2048//1024
 #define BROADCAST_STACK_SIZE    512
 #define KEY_STACK_SIZE           512
 
 /* --- 1. 外部变量或宏定义（根据你实际的工程修改） --- */
-#define BROADCAST_STACK_SIZE    1024        // 广播线程栈大小：1024 字节
+//#define BROADCAST_STACK_SIZE    1024        // 广播线程栈大小：1024 字节
 #define BROADCAST_PRIORITY      15          // 线程优先级（根据系统架构自行调整）
 
 
 /* --- 3. 量产关键点：动态适配底层 CAN FD 结构体的 FIFO 内存池 --- */
-#define CAN_RX_QUEUE_MAX_PACKETS    16      // 队列深度设为 16 帧，足以应对短时爆发的密集总线流
+#define CAN_RX_QUEUE_MAX_PACKETS    1    // 队列深度设为 16 帧，足以应对短时爆发的密集总线流
 #define PACKET_WORDS_SIZE           ((sizeof(can_rxbuf_type) + sizeof(ULONG) - 1) / sizeof(ULONG))
 
 
 
 /* --- 2. 定义 ThreadX 线程组件（全局静态分配） --- */
-static TX_THREAD broadcast_thread;
-static uint8_t   broadcast_stack[BROADCAST_STACK_SIZE]; 
+
+//static uint8_t   broadcast_stack[BROADCAST_STACK_SIZE]; 
 
 /* Define the ThreadX object control blocks...  */
 
@@ -284,12 +284,14 @@ void thread_main_entry(ULONG thread_input)
  * @retval  None
  */
  /* 2. CAN 广播线程入口函数 */
+can_rxbuf_type local_rx_packet; 
+uint8_t frame_len;
 
 void  can_parse_thread_entry(ULONG thread_input)
 {
       /* 声明线程私有的报文接收实体，确保线程安全 */
-    can_rxbuf_type local_rx_packet; 
-	uint8_t frame_len;
+    //can_rxbuf_type local_rx_packet; 
+	//uint8_t frame_len;
 
 
     while(1){
@@ -322,7 +324,7 @@ void can_broadcast_thread_entry(ULONG thread_input)
     {
         /* 按照协议打包当前系统的最新状态（功能、挡位、时间、温湿度、故障码） */
         
-       // broadcast_thread_handler();
+         broadcast_thread_handler();
         
         /* 使用 ThreadX 的精准延时，控制 500ms 周期 
          * 假设你的系统 Tick 是 1ms (100 ticks = 1秒，那么 500ms = 50 ticks)
