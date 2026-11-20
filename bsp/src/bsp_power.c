@@ -23,11 +23,11 @@ static void handler_mainboard_fun(void);
 static Task_Config_t g_tasks[] = {
     // last_tick,  period(ms),  task_handler
   
-    {0,            300,        handler_works_hours},
-    {0,            450,        handler_read_aht30},
-    {0,            100,        handler_ntc_adc_value},         // 10ms*100=1000ms =1s
-    {0,            500,        handler_fan_adc_detected},       //500 *10ms =5000ms = 5s 
-    {0,            400,        handler_door_detected},
+    {0,            289,        handler_works_hours},
+    {0,            461,        handler_read_aht30},
+    {0,            133,        handler_ntc_adc_value},         // 10ms*100=1000ms =1s
+    {0,            504,        handler_fan_adc_detected},       //500 *10ms =5000ms = 5s 
+    {0,            410,        handler_door_detected},
     {0,            20,         handler_mainboard_fun}             //10ms *20 = 200ms
  };
 
@@ -195,6 +195,8 @@ static void handler_mainboard_fun(void)
 /**
  * @brief  内部执行模块输出控制（根据当前状态驱动硬件：风扇、等离子、UV-C、PTC）
  */
+
+uint8_t fan_speed_2;
 static void care_hardware_output_update(void)
 {
     /* 安全检查：如果发生 PTC 高温报警（>=98度）或风扇故障，强制关闭高危模块 */
@@ -276,11 +278,10 @@ static void care_hardware_output_update(void)
                 break;
         }
     }
-    else
+	else 
     {
         /* 过程型功能未运行或暂停时，关闭等离子与 UV-C */
-        //gpio_bits_write(PLASMA_PORT, PLASMA_PIN, FALSE);
-        //gpio_bits_write(UV_C_PORT, UV_C_PIN, FALSE);
+        
         PLASMA_OFF();  
         NEGATIVE_OFF();
 		uvc_led_off();
@@ -288,12 +289,17 @@ static void care_hardware_output_update(void)
         /* 3. 维持型功能：干燥常驻运行处理 */
         if (gpro_t.is_dry_active)
         {
-            switch (gpro_t.dry_gear)
+            DRY_ON();
+			switch (gpro_t.dry_gear)
             {
-                case GEAR_1: /* 静音间歇/低风量 */
+                case GEAR_0:
+					fan_set_gear(0);
+
+				case GEAR_1: /* 静音间歇/低风量 */
                     fan_set_gear(1);//tmr_channel_value_set(TMR4, FAN_PWM_CHANNEL, 15000); 
                     break;
                 case GEAR_2: /* 标准档 */
+					fan_speed_2++;
                     fan_set_gear(2);//tmr_channel_value_set(TMR4, FAN_PWM_CHANNEL, 30000); 
                     break;
                 case GEAR_3: /* 强力连续 */
@@ -303,7 +309,8 @@ static void care_hardware_output_update(void)
         }
         else
         {
-            fan_set_gear(0);//tmr_channel_value_set(TMR4, FAN_PWM_CHANNEL, 0);
+             DRY_OFF();
+			 fan_set_gear(0);//tmr_channel_value_set(TMR4, FAN_PWM_CHANNEL, 0);
         }
     }
 }
@@ -319,7 +326,7 @@ static void care_machine_init(void)
 {
     /* 初始化结构体变量 */
     gpro_t.active_process_func = FUNC_NONE;
-    gpro_t.process_gear = GEAR_2;
+    gpro_t.process_gear = 0;
     gpro_t.process_countdown_s = 0;
     gpro_t.is_process_running = false;
     gpro_t.is_process_paused = false;
@@ -327,7 +334,7 @@ static void care_machine_init(void)
     gpro_t.is_dry_active = true;     /* 干燥作为维持型功能，默认常驻 */
     gpro_t.dry_gear = GEAR_2;        /* 默认标准档 */
 
-    gpro_t.door_closed_flag = true;
+    gpro_t.door_closed_flag = true;  //door is close .
     gpro_t.fan_fault_flag = false;
     gpro_t.ptc_alarm_flag = false;
 

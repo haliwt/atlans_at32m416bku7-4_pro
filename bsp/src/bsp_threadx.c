@@ -321,8 +321,8 @@ void can_broadcast_thread_entry(ULONG thread_input)
 	while (1)
     {
         /* 按照协议打包当前系统的最新状态（功能、挡位、时间、温湿度、故障码） */
-        // build_and_send_status_frame();
-        broadcast_thread_handler();
+        
+       // broadcast_thread_handler();
         
         /* 使用 ThreadX 的精准延时，控制 500ms 周期 
          * 假设你的系统 Tick 是 1ms (100 ticks = 1秒，那么 500ms = 50 ticks)

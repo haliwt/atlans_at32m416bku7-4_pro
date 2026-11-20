@@ -212,6 +212,21 @@ void SysTick_Handler(void)
 
   /* add user code end SysTick_IRQ 1 */
 }
+/**
+  * @brief  this function handles CAN1 RX handler.
+  * @param  none
+  * @retval none
+  */
+void CAN1_RX_IRQHandler(void)
+{
+  /* add user code begin CAN1_RX_IRQ 0 */
+   can_rx_isr();
+  /* add user code end CAN1_RX_IRQ 0 */
+
+  /* add user code begin CAN1_RX_IRQ 1 */
+
+  /* add user code end CAN1_RX_IRQ 1 */
+}
 
 /**
   * @brief  this function handles TMR1 Trigger and hall and TMR11 handler.

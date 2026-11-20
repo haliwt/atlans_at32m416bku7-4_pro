@@ -2,7 +2,7 @@
 
 can_rxbuf_type rx_message;
 
-void CAN1_RX_IRQHandler(void)
+void can_rx_isr(void)
 {
     //can_rx_message_type rx_message;
    // uint8_t frame_len ;

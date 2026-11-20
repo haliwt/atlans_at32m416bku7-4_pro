@@ -6,6 +6,7 @@
 
 
 
+void can_rx_isr(void);
 
 
 

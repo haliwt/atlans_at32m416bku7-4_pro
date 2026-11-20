@@ -116,13 +116,15 @@ void wk_can1_init(void)
   can_rxbuf_overflow_mode_set(CAN1, CAN_RXBUF_OVERFLOW_BE_OVWR);
   can_error_warning_set(CAN1, 11);
   can_restricted_operation_enable(CAN1, FALSE);
-  can_receive_all_enable(CAN1, FALSE);
+  can_receive_all_enable(CAN1, TRUE); //FALSE);// 跳过所有过滤器，接收总线上的任何帧
 
   /* add user code begin can1_init 2 */
- 
-  can_interrupt_enable(CAN1, CAN_RFIE_INT, TRUE); // 开启接收缓冲区非空中断
- // nvic_irq_enable(CAN1_RX_IRQn, 1, 0);			  // 开启NVIC中断（请核对startup文件中的具体中断名）
-
+  /* can interrupt config */
+  
+ // can_interrupt_enable(CAN1, CAN_RFIE_INT, TRUE); // 开启接收缓冲区非空中断
+  nvic_irq_enable(CAN1_RX_IRQn, 1, 0);			  // 开启NVIC中断（请核对startup文件中的具体中断名）
+  can_interrupt_enable(CAN1, CAN_RAFIE_INT|CAN_RFIE_INT|CAN_ROIE_INT|CAN_RIE_INT, TRUE);
+  can_interrupt_enable(CAN1, CAN_BEIE_INT, TRUE);
   /* add user code end can1_init 2 */
 }
 
